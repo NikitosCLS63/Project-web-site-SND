@@ -1,0 +1,70 @@
+echo "# Django #
+*.log
+*.pot
+*.pyc
+__pycache__/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+
+#  PostgreSQL
+*.psql
+*.pgsql
+*.sql
+
+# Секретные ключи и настройки
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Виртуальное окружение
+.venv
+venv/
+ENV/
+env/
+
+# Файлы IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Файлы миграций (опционально, если вы хотите их исключить)
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# Статические файлы, собранные для продакшена
+/static/
+/staticfiles/
+/media/
+
+# Файлы настроек с секретными данными
+WebsiteDjSND/settings/local.py
+WebsiteDjSND/settings/production.py
+
+# Кэш
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.coverage.*
+
+# Файлы дистрибутива
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Прочее
+node_modules/
+bower_components/
+.sass-cache/
+dist/
+build/
+" > .gitignore
