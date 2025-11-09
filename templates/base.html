@@ -1,0 +1,167 @@
+<!-- C:\WebsiteDjSND\templates\base.html -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>SND</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="{% static 'js/theme-toggle.js' %}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <header>
+        <div class="header-top">
+            <div class="logo">
+                <h1>SND</h1>
+                <h6>интернет-магазин компьютерной техники</h6>
+            </div>
+            <nav>
+                <a href="{% url 'home' %}">Главная</a>
+                <a href="{% url 'catalog' %}">Каталог</a>
+                <a href="{% url 'promotions' %}">Акции</a>
+
+                <!-- ТОЛЬКО ДЛЯ НЕАВТОРИЗОВАННЫХ -->
+                <span id="auth-links">
+                    <a href="{% url 'login' %}">Вход</a>
+                    <a href="{% url 'register' %}">Регистрация</a>
+                </span>
+
+                <!-- ТОЛЬКО ДЛЯ АВТОРИЗОВАННЫХ -->
+                <span id="user-menu" style="display: none;">
+                    <span id="user-email"></span>
+                    <a href="#" id="logout-link">Выйти</a>
+                </span>
+            </nav>
+            
+        </div>
+    </header>
+
+    {% block content %}{% endblock %}
+
+    <footer>
+        <div class="footer-container">
+            <!-- Раздел Компания -->
+            <div class="footer-section">
+                <h3>Компания</h3>
+                <ul>
+                    <li><a href="#">О Компании</a></li>
+                    <li><a href="#">Новости</a></li>
+                    <li><a href="#">Персональные данные</a></li>
+                </ul>
+            </div>
+
+            <!-- Раздел Покупателям -->
+            <div class="footer-section">
+                <h3>Покупателям</h3>
+                <ul>
+                    <li><a href="#">Как оформить заказ</a></li>
+                    <li><a href="#">Способы оплаты</a></li>
+                    <li><a href="#">Доставка</a></li>
+                    <li><a href="#">Статус заказа</a></li>
+                    <li><a href="#">Обмен, возврат</a></li>
+                </ul>
+            </div>
+
+            <!-- Раздел Помощь -->
+            <div class="footer-section">
+                <h3>Помощь</h3>
+                <ul>
+                    <li><a href="#">Обратная связь</a></li>
+                </ul>
+            </div>
+
+            <!-- Раздел Оставайтесь на связи -->
+            <div class="footer-section">
+                <h3>Оставайтесь на связи</h3>
+                <p>8-777-77-77-777 (с 03:00 до 22:00)</p>
+                <p>Адреса магазинов в г. Одинцово</p>
+                <p>SND всегда под рукой</p>
+                <p>Следите за новинками и акциями:</p>
+                <input type="email" placeholder="Введите email и подпишитесь">
+                <p>Подписываясь, вы соглашаетесь с условиями политики конфиденциальности и обработки персональных данных
+                </p>
+                <p>Нашли ошибку на сайте? Выделите текст с ошибкой, нажмите Ctrl+Enter и напишите нам</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 20025–~ Компания SND. Администрация Сайта не несет ответственности за размещаемые
+                Пользователями материалы (в т.ч. информацию и изображения), их содержание и качество. Проект создан в целях курсовой работы</p>
+        </div>
+        <div class="theme-toggle" id="theme-toggle">
+                <i class="fas fa-sun"></i>
+            </div>
+    </footer>
+    <script>
+        // === ПРОВЕРКА АВТОРИЗАЦИИ ===
+        const token = localStorage.getItem('access_token');
+        const userEmail = localStorage.getItem('user_email') || 'Пользователь';
+
+        if (token) {
+            document.getElementById('auth-links').style.display = 'none';
+            document.getElementById('user-menu').style.display = 'inline';
+            document.getElementById('user-email').textContent = userEmail;
+        } else {
+            document.getElementById('auth-links').style.display = 'inline';
+            document.getElementById('user-menu').style.display = 'none';
+        }
+
+        // === КНОПКА ВЫХОДА С ПОДТВЕРЖДЕНИЕМ ===
+        document.getElementById('logout-link')?.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            // Создаём модальное окно
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.6); display: flex; justify-content: center;
+        align-items: center; z-index: 9999; font-family: Arial, sans-serif;
+        `;
+
+            modal.innerHTML = `
+        <div style="
+            background: white; padding: 24px; border-radius: 12px; width: 320px;
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        ">
+            <h3 style="margin: 0 0 16px; color: #333;">Выйти из аккаунта?</h3>
+            <p style="margin: 0 0 24px; color: #666; font-size: 14px;">
+            Вы уверены, что хотите выйти?
+            </p>
+            <div>
+            <button id="confirm-logout" style="
+                background: #dc2626; color: white; border: none; padding: 10px 20px;
+                margin: 0 8px; border-radius: 8px; cursor: pointer; font-weight: 600;
+            ">Да, выйти</button>
+            <button id="cancel-logout" style="
+                background: #e5e7eb; color: #374151; border: none; padding: 10px 20px;
+                margin: 0 8px; border-radius: 8px; cursor: pointer;
+            ">Отмена</button>
+            </div>
+        </div>
+        `;
+
+            document.body.appendChild(modal);
+
+            // Кнопка "Да"
+            document.getElementById('confirm-logout').onclick = () => {
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('role');
+                localStorage.removeItem('user_email');
+                window.location.href = '{% url "login" %}';
+            };
+
+            // Кнопка "Отмена"
+            document.getElementById('cancel-logout').onclick = () => {
+                modal.remove();
+            };
+
+            // Закрытие по клику вне окна
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+        });
+    </script>
+</body>
+
+</html>

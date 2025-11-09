@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% if brand_id %}Редактировать{% else %}Добавить{% endif %} бренд</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    .admin-container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+    .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); }
+    .btn { padding: 10px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-secondary { background: #6c757d; }
+    .msg { padding: 10px; border-radius: 6px; margin: 10px 0; font-weight: bold; }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .logo-preview { margin-top: 10px; text-align: center; }
+    .logo-preview img { max-width: 150px; max-height: 150px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>{% if brand_id %}Редактировать бренд{% else %}Добавить бренд{% endif %}</h1>
+
+    <form id="brand-form" enctype="multipart/form-data" data-brand-id="{{ brand_id|default:'' }}">
+      <div class="form-group">
+        <label>Название</label>
+        <input type="text" id="name" required />
+      </div>
+      <div class="form-group">
+        <label>Логотип</label>
+        <input type="file" id="logo" accept="image/*" />
+        <div class="logo-preview" id="logo-preview"></div>
+      </div>
+      <button type="submit" class="btn">Сохранить</button>
+      <a href="/admin-panel/brands/" class="btn btn-secondary">Отмена</a>
+    </form>
+
+    <div id="message"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('brand-form');
+    const brandId = form.dataset.brandId ? parseInt(form.dataset.brandId) : null;
+    const isEdit = brandId !== null;
+    const API = '/api/brands/';
+
+    // Предпросмотр логотипа
+    document.getElementById('logo').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const preview = document.getElementById('logo-preview');
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          preview.innerHTML = `<img src="${e.target.result}" alt="Логотип">`;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.innerHTML = '';
+      }
+    });
+
+    async function loadBrand() {
+      if (!isEdit) return;
+      const res = await fetch(API + brandId + '/', { credentials: 'include' });
+      const data = await res.json();
+      document.getElementById('name').value = data.brand_name;
+      if (data.logo) {
+        document.getElementById('logo-preview').innerHTML = `<img src="${data.logo}" alt="Логотип">`;
+      }
+    }
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const logo = document.getElementById('logo').files[0];
+
+      if (!name) return showMsg('Название обязательно!', 'error');
+
+      const formData = new FormData();
+      formData.append('brand_name', name);
+      if (logo) formData.append('logo', logo);
+
+      const method = isEdit ? 'PUT' : 'POST';
+      const url = isEdit ? API + brandId + '/' : API;
+
+      const res = await fetch(url, {
+        method,
+        credentials: 'include',
+        body: formData
+      });
+
+      if (res.ok) {
+        showMsg('Успешно!', 'success');
+        setTimeout(() => location.href = '/admin-panel/brands/', 1000);
+      } else {
+        const err = await res.json();
+        showMsg(err.error || 'Ошибка', 'error');
+      }
+    };
+
+    function showMsg(text, type) {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.className = `msg ${type}`;
+      setTimeout(() => msg.textContent = '', 3000);
+    }
+
+    loadBrand();
+  </script>
+</body>
+</html>

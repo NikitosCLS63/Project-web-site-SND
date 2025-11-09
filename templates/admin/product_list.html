@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Список товаров</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f0f0f0; }
+    a.btn { margin-right: 10px; text-decoration: none; padding: 5px 10px; background: #666b5e; color: #fff; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>Список товаров</h1>
+    <a href="{% url 'product_add' %}" class="btn">Добавить товар</a>
+    <table>
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Название</th>
+          <th>Цена</th>
+          <th>Количество</th>
+          <th>Категория</th>
+          <th>Бренд</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="products-table"></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function loadProducts() {
+      const res = await fetch('/api/products/');
+      const products = await res.json();
+      const tbody = document.getElementById('products-table');
+      tbody.innerHTML = '';
+
+      products.forEach(p => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${p.sku}</td>
+            <td>${p.product_name}</td>
+            <td>${p.price}</td>
+            <td>${p.stock_quantity || ''}</td>
+            <td>${p.category?.category_name || ''}</td>
+            <td>${p.brand?.brand_name || ''}</td>
+            <td>
+              <a href="/admin-panel/product/edit/${p.product_id}/" class="btn">Редактировать</a>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    loadProducts();
+  </script>
+</body>
+</html>

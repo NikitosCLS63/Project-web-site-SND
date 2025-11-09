@@ -1,7 +1,9 @@
-
+import os
+from datetime import timedelta
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 from pathlib import Path
-
+from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,9 +29,29 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'apps.users',
+    'apps.products',
+    'apps.orders',
+    'apps.cart',
+    'apps.reviews',
+    'main',
+    'apps.analytics',
+    'apps.promotions',
     'api',
-    'rest_framework'
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',  # Для register/login
+    ],
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -46,7 +68,10 @@ ROOT_URLCONF = 'WebsiteDjSND.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'templates',      
+            BASE_DIR / 'templates' / 'auth',  
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -61,19 +86,35 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'WebsiteDjSND.wsgi.application'
 
-
+ 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'имя_вашей_базы_данных',
-        'USER': 'имя_пользователя',
-        'PASSWORD': 'пароль',
-        'HOST': 'localhost',  # или IP-адрес вашего сервера PostgreSQL
-        'PORT': '5432',       # стандартный порт PostgreSQL
+        'NAME': 'dbSNDshop',
+        'USER': 'postgres',
+        'PASSWORD': '1',
+        'HOST': 'localhost', 
+        'PORT': '5432', 
+        'OPTIONS': {
+            'options': '-c client_encoding=UTF8'
+            }# стандартный порт PostgreSQL
     }
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+
+    'USER_ID_FIELD': 'customer_id',
+    'USER_ID_CLAIM': 'customer_id',
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
 }
 
 
@@ -111,9 +152,38 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/4.2/howto/static-files/
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",  #  путь к папке static
+]
+
+# Папка, куда будут собираться все статические файлы при collectstatic
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# (опционально) если у тебя будут медиафайлы:
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_PORT = config('EMAIL_PORT', cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
+FRONTEND_URL = config('FRONTEND_URL')

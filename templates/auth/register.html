@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Регистрация — SND</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
+</head>
+<body>
+
+<div class="auth-container">
+  <div class="auth-header">
+    <h1>Регистрация</h1>
+    <p>Создайте аккаунт покупателя</p>
+  </div>
+
+  <form id="registerForm">
+    <!-- ИМЯ -->
+    <div class="input-group" id="firstNameGroup">
+      <input type="text" id="first_name" required placeholder=" " />
+      <label>Имя</label>
+      <i class="icon fas fa-user"></i>
+      <div class="error-message"></div>
+      <div class="hint-message"></div>
+      <div class="success-message"></div>
+    </div>
+
+    <!-- ФАМИЛИЯ -->
+    <div class="input-group" id="lastNameGroup">
+      <input type="text" id="last_name" required placeholder=" " />
+      <label>Фамилия</label>
+      <i class="icon fas fa-user"></i>
+      <div class="error-message"></div>
+      <div class="hint-message"></div>
+      <div class="success-message"></div>
+    </div>
+
+    <!-- EMAIL -->
+    <div class="input-group" id="emailGroup">
+      <input type="email" id="email" required placeholder=" " />
+      <label>Email</label>
+      <i class="icon fas fa-envelope"></i>
+      <div class="error-message"></div>
+      <div class="hint-message"></div>
+      <div class="success-message"></div>
+    </div>
+
+    <!-- ТЕЛЕФОН -->
+    <div class="input-group" id="phoneGroup">
+      <input type="tel" id="phone" placeholder=" " />
+      <label>Телефон (необязательно)</label>
+      <i class="icon fas fa-phone"></i>
+      <div class="hint-message"></div>
+    </div>
+
+    <!-- ПАРОЛЬ -->
+    <div class="input-group" id="passwordGroup">
+      <input type="password" id="password" required minlength="6" placeholder=" " />
+      <label>Пароль</label>
+      <i class="icon fas fa-lock"></i>
+      <i class="password-toggle fas fa-eye" id="togglePassword"></i>
+      <div class="error-message"></div>
+      <div class="hint-message"></div>
+      <div class="success-message"></div>
+    </div>
+
+    <!-- ПОДТВЕРЖДЕНИЕ ПАРОЛЯ -->
+    <div class="input-group" id="confirmPasswordGroup">
+      <input type="password" id="confirm_password" required placeholder=" " />
+      <label>Подтвердите пароль</label>
+      <i class="icon fas fa-lock"></i>
+      <i class="password-toggle fas fa-eye" id="toggleConfirmPassword"></i>
+      <div class="error-message"></div>
+      <div class="hint-message"></div>
+      <div class="success-message"></div>
+    </div>
+
+    <!-- ЧЕКБОКС СОГЛАСИЯ -->
+    <div class="checkbox-group">
+      <input type="checkbox" id="agree" required />
+      <label for="agree">
+        Я согласен с <a href="/privacy/" target="_blank">политикой конфиденциальности</a> и <a href="/cookies/" target="_blank">использованием cookies</a>
+      </label>
+    </div>
+
+    <button type="submit" class="auth-btn">Зарегистрироваться</button>
+  </form>
+
+  <div class="auth-footer">
+    Уже есть аккаунт? <a href="/login/">Войти</a>
+  </div>
+
+  <div id="message" class="message"></div>
+</div>
+<div class="theme-toggle" id="theme-toggle">
+  <i class="fas fa-sun"></i>
+</div>
+
+<script>
+  // === ГЛАЗИКИ ===
+  document.getElementById('togglePassword').addEventListener('click', () => {
+    const input = document.getElementById('password');
+    const type = input.type === 'password' ? 'text' : 'password';
+    input.type = type;
+    this.classList.toggle('fa-eye');
+    this.classList.toggle('fa-eye-slash');
+  });
+
+  document.getElementById('toggleConfirmPassword').addEventListener('click', () => {
+    const input = document.getElementById('confirm_password');
+    const type = input.type === 'password' ? 'text' : 'password';
+    input.type = type;
+    this.classList.toggle('fa-eye');
+    this.classList.toggle('fa-eye-slash');
+  });
+
+  // === ОЧИСТКА ===
+  const clearNotifications = () => {
+    document.querySelectorAll('.input-group').forEach(g => {
+      g.classList.remove('error', 'hint', 'success');
+    });
+    document.querySelectorAll('.error-message, .hint-message, .success-message').forEach(e => {
+      e.classList.remove('show');
+    });
+  };
+
+  // === ПОКАЗАТЬ УВЕДОМЛЕНИЕ ===
+  function showNotification(groupId, type, text, icon = 'info-circle') {
+    const group = document.getElementById(groupId);
+    const el = group.querySelector(`.${type}-message`);
+
+    group.classList.remove('error', 'hint', 'success');
+    group.classList.add(type);
+
+    el.innerHTML = `<i class="fas fa-${icon}"></i> ${text}`;
+    el.classList.add('show');
+
+    setTimeout(() => {
+      el.classList.remove('show');
+      group.classList.remove(type);
+    }, 5000);
+  }
+
+  // === РЕГИСТРАЦИЯ ===
+  document.getElementById('registerForm').onsubmit = async (e) => {
+    e.preventDefault();
+    clearNotifications();
+
+    const firstName = document.getElementById('first_name').value.trim();
+    const lastName = document.getElementById('last_name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const agree = document.getElementById('agree').checked;
+
+    let hasError = false;
+
+    // ИМЯ
+    if (!firstName) {
+      showNotification('firstNameGroup', 'error', 'Введите имя', 'exclamation-triangle');
+      hasError = true;
+    } else if (firstName.length < 2) {
+      showNotification('firstNameGroup', 'hint', 'Минимум 2 буквы', 'lightbulb');
+    } else {
+      showNotification('firstNameGroup', 'success', 'Отлично!', 'check');
+    }
+
+    // ФАМИЛИЯ
+    if (!lastName) {
+      showNotification('lastNameGroup', 'error', 'Введите фамилию', 'exclamation-triangle');
+      hasError = true;
+    } else {
+      showNotification('lastNameGroup', 'success', 'Готово', 'check');
+    }
+
+    // EMAIL
+    if (!email) {
+      showNotification('emailGroup', 'error', 'Введите email', 'exclamation-triangle');
+      hasError = true;
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      showNotification('emailGroup', 'error', 'Неверный формат email', 'exclamation-triangle');
+      hasError = true;
+    } else {
+      showNotification('emailGroup', 'success', 'Email валиден', 'check');
+    }
+
+    // ПАРОЛЬ
+    if (!password) {
+      showNotification('passwordGroup', 'error', 'Введите пароль', 'exclamation-triangle');
+      hasError = true;
+    } else if (password.length < 6) {
+      showNotification('passwordGroup', 'hint', 'Минимум 6 символов', 'lightbulb');
+      hasError = true;
+    } else {
+      showNotification('passwordGroup', 'success', 'Пароль сильный', 'shield-check');
+    }
+
+    // ПОДТВЕРЖДЕНИЕ ПАРОЛЯ
+    if (!confirmPassword) {
+      showNotification('confirmPasswordGroup', 'error', 'Подтвердите пароль', 'exclamation-triangle');
+      hasError = true;
+    } else if (confirmPassword !== password) {
+      showNotification('confirmPasswordGroup', 'error', 'Пароли не совпадают', 'exclamation-triangle');
+      hasError = true;
+    } else {
+      showNotification('confirmPasswordGroup', 'success', 'Пароли совпадают', 'check');
+    }
+
+    // СОГЛАСИЕ
+    if (!agree) {
+      const msg = document.getElementById('message');
+      msg.textContent = 'Необходимо согласие с политикой';
+      msg.classList.add('error', 'show');
+      hasError = true;
+      setTimeout(() => msg.classList.remove('show'), 5000);
+    }
+
+    if (hasError) return;
+
+    const btn = e.target.querySelector('.auth-btn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+    btn.textContent = '';
+
+    const data = {
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      phone: phone || null,
+      password,
+      role_name: "client"
+    };
+
+    try {
+      const res = await fetch('/api/register/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+
+      if (res.ok) {
+        const msg = document.getElementById('message');
+        msg.textContent = 'Регистрация успешна!';
+        msg.classList.add('success', 'show');
+        setTimeout(() => {
+            localStorage.setItem('user_email', email);  // ← email из формы
+            window.location.href = '/login/';
+        }, 1800);
+      } else {
+        if (json.email) showNotification('emailGroup', 'error', json.email[0], 'exclamation-triangle');
+        if (json.password) showNotification('passwordGroup', 'error', json.password[0], 'exclamation-triangle');
+        if (json.non_field_errors) showNotification('emailGroup', 'error', json.non_field_errors[0], 'exclamation-triangle');
+      }
+    } catch {
+      showNotification('emailGroup', 'error', 'Сервер недоступен', 'wifi-slash');
+    } finally {
+      setTimeout(() => {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        btn.textContent = 'Зарегистрироваться';
+      }, 600);
+    }
+  };
+</script>
+
+</body>
+</html>

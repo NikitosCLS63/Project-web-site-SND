@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Вход — SND</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
+</head>
+
+<body>
+
+  <div class="auth-container">
+    <div class="auth-header">
+      <h1>Вход</h1>
+      <p>Войдите в свой аккаунт</p>
+    </div>
+
+    <form id="loginForm">
+      <div class="input-group" id="emailGroup">
+        <input type="email" id="email" required placeholder=" " />
+        <label>Email</label>
+        <i class="icon fas fa-envelope"></i>
+        <div class="error-message" id="emailError"></div>
+        <div class="hint-message" id="emailHint"></div>
+        <div class="success-message" id="emailSuccess"></div>
+      </div>
+
+      <div class="input-group" id="passwordGroup">
+        <input type="password" id="password" required placeholder=" " />
+        <label>Пароль</label>
+        <i class="icon fas fa-lock"></i>
+        <i class="password-toggle fas fa-eye" id="togglePassword"></i>
+        <div class="error-message" id="passwordError"></div>
+        <div class="hint-message" id="passwordHint"></div>
+        <div class="success-message" id="passwordSuccess"></div>
+      </div>
+
+      <div class="remember-me">
+        <input type="checkbox" id="remember" />
+        <label for="remember">Запомнить меня</label>
+      </div>
+
+      <button type="submit" class="auth-btn">Войти</button>
+    </form>
+
+    <div class="auth-footer">
+      Нет аккаунта? <a href="/register/">Зарегистрироваться</a>
+    </div>
+    <!-- востановление пароля сделать -->
+    <div class="auth-footer">
+      <a href="/password_reset/"> Забыли пароль?</a>
+    </div>
+    <div id="message" class="message"></div>
+  </div>
+  <div class="theme-toggle" id="theme-toggle">
+    <i class="fas fa-sun"></i>
+  </div>
+
+  <script>
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+    togglePassword.addEventListener('click', () => {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      togglePassword.classList.toggle('fa-eye');
+      togglePassword.classList.toggle('fa-eye-slash');
+    });
+
+    const clearNotifications = () => {
+      document.querySelectorAll('.input-group').forEach(g => {
+        g.classList.remove('error', 'hint', 'success');
+      });
+      document.querySelectorAll('.error-message, .hint-message, .success-message').forEach(e => {
+        e.classList.remove('show');
+      });
+    };
+
+    function showNotification(groupId, type, text, icon = 'info-circle') {
+      const group = document.getElementById(groupId);
+      const el = group.querySelector(`.${type}-message`);
+
+      group.classList.remove('error', 'hint', 'success');
+      group.classList.add(type);
+
+      el.innerHTML = `<i class="fas fa-${icon}"></i> ${text}`;
+      el.classList.add('show');
+
+      setTimeout(() => {
+        el.classList.remove('show');
+        group.classList.remove(type);
+      }, 5000);
+    }
+
+    document.getElementById('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      clearNotifications();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      let hasError = false;
+
+      if (!email) {
+        showNotification('emailGroup', 'error', 'Введите email', 'exclamation-triangle');
+        hasError = true;
+      } else if (!/\S+@\S+\.\S+/.test(email)) {
+        showNotification('emailGroup', 'error', 'Неверный формат email', 'exclamation-triangle');
+        hasError = true;
+      }
+
+      if (!password) {
+        showNotification('passwordGroup', 'error', 'Введите пароль', 'exclamation-triangle');
+        hasError = true;
+      } else {
+        showNotification('passwordGroup', 'success', 'OK', 'check');
+      }
+
+      if (hasError) return;
+
+      const btn = e.target.querySelector('.auth-btn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+      btn.textContent = '';
+
+      try {
+        const res = await fetch('/api/login/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const json = await res.json();
+
+        if (res.ok) {
+          const msg = document.getElementById('message');
+          msg.textContent = 'Успешный вход!';
+          msg.classList.add('success', 'show');
+          setTimeout(() => {
+            localStorage.setItem('access_token', json.access);
+            localStorage.setItem('role', json.role);
+            localStorage.setItem('user_email', json.email);
+            if (json.role === 'admin') window.location.href = '/admin-panel/';
+            else if (json.role === 'employee') window.location.href = '/employee-panel/';
+            else window.location.href = '/';
+          }, 1200);
+        } else {
+          const err = json.detail || json.non_field_errors?.[0] || 'Неверный email или пароль';
+          showNotification('passwordGroup', 'error', err, 'exclamation-triangle');
+        }
+      } catch {
+        showNotification('emailGroup', 'error', 'Сервер недоступен', 'wifi-slash');
+      } finally {
+        setTimeout(() => {
+          btn.classList.remove('loading');
+          btn.disabled = false;
+          btn.textContent = 'Войти';
+        }, 600);
+      }
+    };
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>{% if product_id %}Редактировать{% else %}Добавить{% endif %} товар</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body>
+  <div class="admin-container">
+    <h1>{% if product_id %}Редактировать{% else %}Добавить{% endif %} товар</h1>
+
+    <form id="product-form" enctype="multipart/form-data" data-product-id="{{ product_id|default:'' }}">
+      <div class="form-group">
+        <label>SKU *</label>
+        <input type="text" id="sku" required />
+      </div>
+
+      <div class="form-group">
+        <label>Название *</label>
+        <input type="text" id="name" required />
+      </div>
+
+      <div class="form-group">
+        <label>Цена *</label>
+        <input type="number" step="0.01" id="price" required />
+      </div>
+
+      <div class="form-group">
+        <label>Количество</label>
+        <input type="number" id="stock" />
+      </div>
+
+      <div class="form-group">
+        <label>Бренд</label>
+        <select id="brand"></select>
+      </div>
+
+      <div class="form-group">
+        <label>Категория</label>
+        <select id="category"></select>
+      </div>
+
+      <div class="form-group">
+        <label>Поставщик</label>
+        <select id="supplier"></select>
+      </div>
+
+      <div class="form-group">
+        <label>Характеристики (JSONB)</label>
+        <textarea id="specifications" placeholder='{"color": "Red", "memory": "16GB"}'></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Фото (3-5 изображений)</label>
+        <input type="file" id="images" accept="image/*" multiple>
+        <div class="preview" id="preview"></div>
+        <div class="error" id="image-error"></div>
+      </div>
+
+      <button type="submit" class="btn">Сохранить</button>
+      <a href="/admin-panel/products/" class="btn btn-secondary">Отмена</a>
+    </form>
+
+    <div id="message"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('product-form');
+    const productId = form.dataset.productId ? parseInt(form.dataset.productId) : null;
+    const isEdit = productId !== null;
+
+    const imageInput = document.getElementById('images');
+    const preview = document.getElementById('preview');
+    const imageError = document.getElementById('image-error');
+
+    // Массив для хранения выбранных файлов
+    let selectedFiles = [];
+
+    // Функция отображения всех изображений (File объекты или URL)
+    function showImages() {
+      preview.innerHTML = ''; // Очистка превью
+      selectedFiles.forEach(fileOrUrl => {
+        const img = document.createElement('img');
+        img.style.maxWidth = '100px';
+        img.style.margin = '5px';
+        if (typeof fileOrUrl === 'string') {
+          img.src = fileOrUrl; // URL из сервера
+        } else {
+          const reader = new FileReader();
+          reader.onload = e => img.src = e.target.result;
+          reader.readAsDataURL(fileOrUrl);
+        }
+        preview.appendChild(img);
+      });
+    }
+
+    // Обработчик выбора файлов
+    imageInput.addEventListener('change', e => {
+      const files = Array.from(e.target.files);
+
+      // Перезаписываем массив выбранных файлов
+      selectedFiles = files;
+
+      // Проверка количества изображений
+      if (selectedFiles.length < 3 || selectedFiles.length > 5) {
+        imageError.textContent = 'Выберите от 3 до 5 изображений';
+      } else {
+        imageError.textContent = '';
+      }
+
+      showImages();
+    });
+
+    // Загрузка опций для select
+    async function loadOptions() {
+      const [brands, categories, suppliers] = await Promise.all([
+        fetch('/api/brands/').then(r => r.json()),
+        fetch('/api/categories/').then(r => r.json()),
+        fetch('/api/suppliers/').then(r => r.json())
+      ]);
+
+      const brandSelect = document.getElementById('brand');
+      brands.forEach(b => brandSelect.add(new Option(b.brand_name, b.brand_id)));
+
+      const catSelect = document.getElementById('category');
+      categories.forEach(c => catSelect.add(new Option(c.category_name, c.category_id)));
+
+      const supSelect = document.getElementById('supplier');
+      suppliers.forEach(s => supSelect.add(new Option(s.supplier_name, s.supplier_id)));
+    }
+
+    // Загрузка данных продукта при редактировании
+    async function loadProduct() {
+      if (!isEdit) return;
+      const res = await fetch(`/api/products/${productId}/`);
+      const data = await res.json();
+
+      document.getElementById('sku').value = data.sku;
+      document.getElementById('name').value = data.product_name;
+      document.getElementById('price').value = data.price;
+      document.getElementById('stock').value = data.stock_quantity || '';
+      document.getElementById('brand').value = data.brand?.brand_id || '';
+      document.getElementById('category').value = data.category?.category_id || '';
+      document.getElementById('supplier').value = data.supplier?.supplier_id || '';
+
+      if (data.specifications)
+        document.getElementById('specifications').value = JSON.stringify(data.specifications, null, 2);
+
+      if (data.images && data.images.length > 0) {
+        // Подгружаем изображения с сервера в массив selectedFiles как URL
+        selectedFiles = data.images;
+        showImages();
+      }
+    }
+
+    // Отправка формы
+    form.onsubmit = async e => {
+      e.preventDefault();
+
+      if (!isEdit && (selectedFiles.length < 3 || selectedFiles.length > 5)) {
+        imageError.textContent = 'Нужно выбрать от 3 до 5 изображений';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('sku', document.getElementById('sku').value);
+      formData.append('product_name', document.getElementById('name').value);
+      formData.append('price', document.getElementById('price').value);
+      const stock = document.getElementById('stock').value;
+      if (stock) formData.append('stock_quantity', stock);
+      const brand = document.getElementById('brand').value;
+      if (brand) formData.append('brand_id', brand);
+      const cat = document.getElementById('category').value;
+      if (cat) formData.append('category_id', cat);
+      const sup = document.getElementById('supplier').value;
+      if (sup) formData.append('supplier_id', sup);
+      const specs = document.getElementById('specifications').value;
+      if (specs) formData.append('specifications', specs);
+
+      // Добавляем файлы в FormData
+      selectedFiles.forEach(file => {
+        if (file instanceof File) formData.append('images', file);
+      });
+
+      const method = isEdit ? 'PUT' : 'POST';
+      const url = isEdit ? `/api/products/${productId}/` : '/api/products/';
+
+      const res = await fetch(url, { method, body: formData });
+
+      if (res.ok) {
+        alert('Успешно!');
+        location.href = '/admin-panel/products/';
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Ошибка');
+      }
+    };
+
+    loadOptions();
+    loadProduct();
+
+  </script>
+</body>
+
+</html>

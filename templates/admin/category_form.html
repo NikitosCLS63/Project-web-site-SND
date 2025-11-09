@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% if category_id %}Редактировать{% else %}Добавить{% endif %} категорию</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <style>
+    .admin-container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); }
+    .btn { padding: 10px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-secondary { background: #6c757d; }
+    .msg { padding: 10px; border-radius: 6px; margin: 10px 0; font-weight: bold; }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>{% if category_id %}Редактировать категорию{% else %}Добавить категорию{% endif %}</h1>
+
+    <form id="category-form" data-category-id="{{ category_id|default:'' }}">
+      <div class="form-group">
+        <label>Название</label>
+        <input type="text" id="name" required />
+      </div>
+      <div class="form-group">
+        <label>Описание</label>
+        <textarea id="desc" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Родительская категория</label>
+        <select id="parent">
+          <option value="">— Нет —</option>
+        </select>
+      </div>
+      <button type="submit" class="btn">Сохранить</button>
+      <a href="/admin-panel/categories/" class="btn btn-secondary">Отмена</a>
+    </form>
+
+    <div id="message"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('category-form');
+    const catId = form.dataset.categoryId ? parseInt(form.dataset.categoryId) : null;
+    const isEdit = catId !== null;
+    const API = '/api/categories/';
+
+    async function loadCategories() {
+      const res = await fetch(API, { credentials: 'include' });
+      const cats = await res.json();
+      const select = document.getElementById('parent');
+      select.innerHTML = '<option value="">— Нет —</option>';
+      cats.forEach(c => {
+        if (!isEdit || c.category_id !== catId) {
+          const opt = document.createElement('option');
+          opt.value = c.category_id;
+          opt.textContent = c.category_name;
+          select.appendChild(opt);
+        }
+      });
+      return cats;
+    }
+
+    async function loadCategory() {
+      if (!isEdit) return;
+      const res = await fetch(API + catId + '/', { credentials: 'include' });
+      const data = await res.json();
+      document.getElementById('name').value = data.category_name;
+      document.getElementById('desc').value = data.description || '';
+      if (data.parent) document.getElementById('parent').value = data.parent;
+    }
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const desc = document.getElementById('desc').value.trim();
+      const parent = document.getElementById('parent').value;
+
+      if (!name) return showMsg('Название обязательно!', 'error');
+
+      const data = {
+        category_name: name,
+        description: desc || null,
+        parent: parent ? parseInt(parent) : null
+      };
+
+      const method = isEdit ? 'PUT' : 'POST';
+      const url = isEdit ? API + catId + '/' : API;
+
+      const res = await fetch(url, {
+        method, credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        showMsg('Успешно!', 'success');
+        setTimeout(() => location.href = '/admin-panel/categories/', 1000);
+      } else {
+        const err = await res.json();
+        showMsg(err.error || 'Ошибка', 'error');
+      }
+    };
+
+    function showMsg(text, type) {
+      const msg = document.getElementById('message');
+      msg.textContent = text;
+      msg.className = `msg ${type}`;
+      setTimeout(() => msg.textContent = '', 3000);
+    }
+
+    loadCategories().then(() => loadCategory());
+  </script>
+</body>
+</html>

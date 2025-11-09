@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Админ-панель — SND</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .admin-panel {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid var(--border);
+    }
+    .admin-title {
+      font-size: 28px;
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .user-info i { color: var(--primary); }
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .admin-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .admin-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      border-color: var(--primary);
+    }
+    .admin-card i {
+      font-size: 36px;
+      color: var(--primary);
+      margin-bottom: 15px;
+    }
+    .admin-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      color: var(--text);
+    }
+    .admin-card p {
+      margin: 0;
+      font-size: 14px;
+      color: #666;
+    }
+    .logout-btn {
+      background: #dc3545;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .logout-btn:hover {
+      background: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-panel">
+    <div class="admin-header">
+      <h1 class="admin-title">Админ-панель</h1>
+      <div class="user-info">
+        <i class="fas fa-user-shield"></i>
+        <span id="admin-email">{{ request.user.email|default:"admin@snd.ru" }}</span>
+        <a href="#" id="logout" class="logout-btn">
+          <i class="fas fa-sign-out-alt"></i> Выйти
+        </a>
+      </div>
+    </div>
+
+    <div class="admin-grid">
+      <!-- БРЕНДЫ -->
+      <a href="/admin-panel/brands/" class="admin-card">
+        <i class="fas fa-tags"></i>
+        <h3>Бренды</h3>
+        <p>Управление брендами товаров</p>
+      </a>
+
+      <!-- КАТЕГОРИИ -->
+      <a href="/admin-panel/categories/" class="admin-card">
+        <i class="fas fa-folder-tree"></i>
+        <h3>Категории</h3>
+        <p>Структура каталога</p>
+      </a>
+
+      <!-- ТОВАРЫ -->
+      <a href="/admin-panel/products/" class="admin-card">
+        <i class="fas fa-box"></i>
+        <h3>Товары</h3>
+        <p>Добавление и редактирование</p>
+      </a>
+
+      <!-- ЗАПАСЫ -->
+      <a href="/admin-panel/inventory/" class="admin-card">
+        <i class="fas fa-warehouse"></i>
+        <h3>Запасы</h3>
+        <p>Управление складом</p>
+      </a>
+
+      <!-- ЗАКАЗЫ -->
+      <a href="/admin-panel/orders/" class="admin-card">
+        <i class="fas fa-shopping-cart"></i>
+        <h3>Заказы</h3>
+        <p>Обработка заказов</p>
+      </a>
+
+      <!-- ПОЛЬЗОВАТЕЛИ -->
+      <a href="/admin-panel/users/" class="admin-card">
+        <i class="fas fa-users"></i>
+        <h3>Пользователи</h3>
+        <p>Управление аккаунтами</p>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    // Выход
+    document.getElementById('logout').addEventListener('click', async (e) => {
+      e.preventDefault();
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('role');
+      localStorage.removeItem('user_email');
+      window.location.href = '/login/';
+    });
+
+    // Отображение email
+    const savedEmail = localStorage.getItem('user_email');
+    if (savedEmail) {
+      document.getElementById('admin-email').textContent = savedEmail;
+    }
+  </script>
+</body>
+</html>
