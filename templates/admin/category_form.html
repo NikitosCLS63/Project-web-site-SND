@@ -1,26 +1,54 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% if category_id %}Редактировать{% else %}Добавить{% endif %} категорию</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
   <style>
+    :root {
+        --primary: #d97706;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f9f9f9;
+        --text: #333;
+        --text-secondary: #666;
+        --border: #eeeeee;
+        --input-bg: #ffffff;
+    }
+    [data-theme="dark"] {
+        --primary: #d97706;
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #2d2d2d;
+        --text: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --border: #404040;
+        --input-bg: #2d2d2d;
+    }
+    body { background: var(--bg-secondary); color: var(--text); transition: background 0.3s ease, color 0.3s ease; margin: 0; font-family: Arial, sans-serif; }
     .admin-container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    h1 { color: var(--text); }
     .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
-    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); }
-    .btn { padding: 10px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text); }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 2px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); transition: border-color 0.2s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
+    .btn { padding: 10px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; margin-right: 8px; transition: all 0.2s; }
+    .btn:hover { opacity: 0.9; transform: translateY(-2px); }
     .btn-secondary { background: #6c757d; }
     .msg { padding: 10px; border-radius: 6px; margin: 10px 0; font-weight: bold; }
     .success { background: #d4edda; color: #155724; }
     .error { background: #f8d7da; color: #721c24; }
+    #theme-toggle { background: var(--primary); color: white; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 16px; margin-right: 10px; }
+    #theme-toggle:hover { opacity: 0.9; transform: scale(1.05); }
   </style>
 </head>
 <body>
   <div class="admin-container">
-    <h1>{% if category_id %}Редактировать категорию{% else %}Добавить категорию{% endif %}</h1>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h1>{% if category_id %}Редактировать категорию{% else %}Добавить категорию{% endif %}</h1>
+      <button id="theme-toggle"><i class="fas fa-moon"></i></button>
+    </div>
 
     <form id="category-form" data-category-id="{{ category_id|default:'' }}">
       <div class="form-group">

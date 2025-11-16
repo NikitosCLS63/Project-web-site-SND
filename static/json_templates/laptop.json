@@ -1,0 +1,14 @@
+{
+  "type": "laptop",
+  "specs": {
+    "brand": "",
+    "model": "",
+    "cpu": "",
+    "ram": "",
+    "storage": "",
+    "display": "",
+    "gpu": "",
+    "ports": [],
+    "battery": ""
+  }
+}

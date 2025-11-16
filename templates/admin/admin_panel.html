@@ -1,13 +1,47 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Админ-панель — SND</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <script src="{% static 'js/auth.js' %}"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
   <style>
+    :root {
+        --primary: #d97706;
+        --primary-dark: #c56a00;
+        --primary-light: #fef3e8;
+        --red: #dc3545;
+        --text: #333;
+        --text-secondary: #666;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f9f9f9;
+        --card-bg: #f9f9f9;
+        --border: #eeeeee;
+    }
+
+    [data-theme="dark"] {
+        --primary: #d97706;
+        --primary-dark: #c56a00;
+        --primary-light: #fef3e8;
+        --red: #dc3545;
+        --text: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #2d2d2d;
+        --card-bg: #2d2d2d;
+        --border: #404040;
+    }
+
+    body {
+        background: var(--bg-secondary);
+        color: var(--text);
+        transition: background 0.3s ease, color 0.3s ease;
+    }
+
     .admin-panel {
       max-width: 1000px;
       margin: 0 auto;
@@ -47,6 +81,8 @@
       text-align: center;
       transition: all 0.3s ease;
       cursor: pointer;
+      color: var(--text);
+      text-decoration: none;
     }
     .admin-card:hover {
       transform: translateY(-5px);
@@ -66,10 +102,10 @@
     .admin-card p {
       margin: 0;
       font-size: 14px;
-      color: #666;
+      color: var(--text-secondary);
     }
     .logout-btn {
-      background: #dc3545;
+      background: var(--red);
       color: white;
       padding: 8px 16px;
       border-radius: 6px;
@@ -78,9 +114,28 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      border: none;
+      cursor: pointer;
     }
     .logout-btn:hover {
       background: #c82333;
+    }
+    #theme-toggle {
+      background: var(--primary);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      display: inline-flex;
+      align-items: center;
+      margin-left: 10px;
+      transition: all 0.3s ease;
+    }
+    #theme-toggle:hover {
+      background: var(--primary-dark);
+      transform: scale(1.05);
     }
   </style>
 </head>
@@ -88,9 +143,12 @@
   <div class="admin-panel">
     <div class="admin-header">
       <h1 class="admin-title">Админ-панель</h1>
-      <div class="user-info">
-        <i class="fas fa-user-shield"></i>
-        <span id="admin-email">{{ request.user.email|default:"admin@snd.ru" }}</span>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <div class="user-info">
+          <i class="fas fa-user-shield"></i>
+          <span id="admin-email">{{ request.user.email|default:"admin@snd.ru" }}</span>
+        </div>
+        <button id="theme-toggle"><i class="fas fa-moon"></i></button>
         <a href="#" id="logout" class="logout-btn">
           <i class="fas fa-sign-out-alt"></i> Выйти
         </a>
@@ -147,8 +205,11 @@
     document.getElementById('logout').addEventListener('click', async (e) => {
       e.preventDefault();
       localStorage.removeItem('access_token');
-      localStorage.removeItem('role');
+      localStorage.removeItem('refresh_token');
       localStorage.removeItem('user_email');
+      localStorage.removeItem('user_role');
+      // Очистим cookie
+      document.cookie = 'access_token=; path=/; max-age=0';
       window.location.href = '/login/';
     });
 

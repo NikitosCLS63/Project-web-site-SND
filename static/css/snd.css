@@ -1,0 +1,81 @@
+:root{
+--bg:#f7f6f3;
+--card:#ffffff;
+--accent:#2b6df6;
+--muted:#6b6b6b;
+--shadow: 0 6px 18px rgba(20,20,30,0.06);
+--max-width:1200px;
+--radius:14px;
+--container-padding:24px;
+font-size:16px;
+}
+*{box-sizing:border-box}
+body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; background:var(--bg); color:#222}
+.container{max-width:var(--max-width); margin:0 auto; padding:var(--container-padding)}
+
+
+/* Header */
+.snd-header{background:linear-gradient(90deg, rgba(43,109,246,0.06), rgba(43,109,246,0.02)); border-bottom:1px solid rgba(0,0,0,0.04)}
+.snd-header .container{display:flex; align-items:center; justify-content:space-between; padding:18px 24px}
+.brand h1{margin:0; font-size:1.6rem; color:var(--accent)}
+.brand .tag{margin:0; font-size:0.9rem; color:var(--muted)}
+.nav a{margin-left:18px; text-decoration:none; color:#222; font-weight:500}
+
+
+/* Hero */
+.hero{padding:48px 0}
+.hero-grid{display:grid; grid-template-columns:1fr 420px; gap:40px; align-items:center}
+.hero-text h2{font-size:2.2rem; margin:0 0 12px}
+.lead{color:var(--muted); line-height:1.6}
+.btn{display:inline-block; margin-top:16px; padding:12px 20px; border-radius:10px; background:var(--accent); color:white; text-decoration:none; box-shadow:var(--shadow)}
+.hero-image{height:260px; border-radius:12px; background:linear-gradient(135deg,#e9f0ff, #ffffff); box-shadow:var(--shadow)}
+
+
+/* About/timeline */
+.about{padding:28px 0}
+.timeline{display:flex; gap:16px; margin-top:18px}
+.timeline .item{background:var(--card); padding:16px; border-radius:12px; box-shadow:var(--shadow); flex:1}
+.timeline .item strong{display:block; color:var(--accent); font-size:1.1rem}
+
+
+/* Products */
+.products{padding:32px 0; background:transparent}
+.cards{display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:18px; margin-top:18px}
+.card{background:var(--card); padding:18px; border-radius:12px; box-shadow:var(--shadow)}
+
+
+/* Values */
+.values{padding:28px 0}
+.values-list{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; list-style:none; padding:0}
+.values-list li{background:var(--card); padding:16px; border-radius:12px; box-shadow:var(--shadow)}
+.values-list h5{margin:0 0 8px}
+
+
+/* Stats */
+.stats{padding:24px 0}
+.stat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px}
+.stat{background:var(--card); padding:18px; border-radius:12px; text-align:center; box-shadow:var(--shadow)}
+.stat strong{display:block; font-size:1.4rem; color:var(--accent)}
+.stat span{display:block; color:var(--muted); margin-top:6px}
+
+
+/* Contact & Footer */
+.contact{padding:28px 0}
+.note{color:var(--muted); margin-top:8px}
+.snd-footer{padding:18px 0; border-top:1px solid rgba(0,0,0,0.04); background:transparent}
+.snd-footer p{margin:0; text-align:center; color:var(--muted)}
+
+
+/* Responsive */
+@media (max-width:900px){
+.hero-grid{grid-template-columns:1fr}
+.snd-header .container{flex-direction:column; gap:10px; align-items:flex-start}
+.nav{display:flex; gap:12px; flex-wrap:wrap}
+}
+
+
+/* Small helpers */
+h3{margin-top:0}
+
+
+/* Конец CSS */

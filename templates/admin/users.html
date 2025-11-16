@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пользователи — Админ панель</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="{% static 'js/theme-toggle.js' %}"></script>
+    <style>
+        :root {
+            --orange: #d97706;
+            --orange-dark: #c56a00;
+            --orange-light: #fef3e8;
+            --red: #e63946;
+            --red-dark: #d00000;
+            --gray: #f8f9fa;
+            
+            /* Светлая тема */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9f9f9;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --border-color: #eeeeee;
+            --table-hover: #fff8f0;
+        }
+
+        /* Тёмная тема */
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --border-color: #404040;
+            --table-hover: #3a2a1a;
+        }
+
+        body {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            margin: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 1260px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        /* КНОПКА НАЗАД — ВЕРХНИЙ ЛЕВЫЙ УГОЛ */
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--orange);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 6px 20px rgba(217, 119, 6, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .back-btn:hover {
+            background: var(--orange-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(217, 119, 6, 0.4);
+        }
+
+        .back-btn i {
+            font-size: 18px;
+        }
+
+        .block-title {
+            font-size: 28px;
+            color: var(--orange);
+            font-weight: 700;
+            margin: 40px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--orange-light);
+            display: inline-block;
+        }
+
+        .table-wrapper {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            margin-bottom: 40px;
+            transition: background 0.3s ease;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+            background: var(--bg-primary);
+        }
+
+        thead th {
+            background: var(--orange);
+            color: white;
+            padding: 18px 16px;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+
+        tbody td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background-color: var(--table-hover) !important;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: var(--bg-secondary);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            margin: 0 6px;
+            border: none;
+            border-radius: 50px !important;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            min-width: 110px;
+            justify-content: center;
+        }
+
+        .btn-edit {
+            background: var(--orange);
+            color: white;
+        }
+        .btn-edit:hover {
+            background: var(--orange-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(217,119,6,0.35);
+        }
+
+        .btn-delete {
+            background: var(--red);
+            color: white;
+        }
+        .btn-delete:hover {
+            background: var(--red-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(230,57,70,0.35);
+        }
+
+        .btn-delete.disabled {
+            background: #ccc !important;
+            cursor: not-allowed;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+            transform: none !important;
+        }
+
+        .btn i {
+            font-size: 15px;
+        }
+
+        .role-badge {
+            background: var(--orange);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* МОДАЛЬНОЕ ОКНО */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--orange);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--orange-light);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border 0.2s;
+            box-sizing: border-box;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--orange);
+            box-shadow: 0 0 0 3px rgba(217,119,6,0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .modal-buttons .btn {
+            flex: 1;
+            margin: 0;
+        }
+
+        .btn-secondary {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--text-secondary);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-secondary);
+        }
+
+
+        @media (max-width: 768px) {
+            .back-btn {
+                top: 15px;
+                left: 15px;
+                padding: 10px 18px;
+                font-size: 14px;
+            }
+            .btn {
+                padding: 10px 14px;
+                font-size: 13px;
+                min-width: auto;
+            }
+            .block-title { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- КНОПКА НАЗАД — КРАСИВАЯ, ФИКСИРОВАННАЯ, ОРАНЖЕВАЯ -->
+    <a href="/admin-panel/" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Назад
+    </a>
+
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 class="block-title">Пользователи системы</h1>
+            <button class="btn btn-edit" id="theme-toggle" style="width: auto; min-width: 50px;">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+
+        <div class="table-wrapper">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 0;">
+                <h2 class="block-title" style="margin: 0;">Администраторы и сотрудники</h2>
+                <button class="btn btn-edit" id="add-employee-btn" onclick="showCreateEmployeeModal()">
+                    <i class="fas fa-user-plus"></i> Добавить employee
+                </button>
+            </div>
+            <table id="admin-table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Имя</th>
+                        <th>Фамилия</th>
+                        <th>Роль</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="table-wrapper">
+            <h2 class="block-title">Клиенты</h2>
+            <table id="customers-table">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Имя</th>
+                        <th>Фамилия</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНОЕ ОКНО ДЛЯ СОЗДАНИЯ EMPLOYEE -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <i class="fas fa-user-plus"></i> Создать сотрудника
+            </div>
+            <form id="employeeForm">
+                <div class="form-group">
+                    <label for="empEmail">Email *</label>
+                    <input type="email" id="empEmail" name="email" required placeholder="employee@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="empFirstName">Имя</label>
+                    <input type="text" id="empFirstName" name="first_name" placeholder="Иван">
+                </div>
+                <div class="form-group">
+                    <label for="empLastName">Фамилия</label>
+                    <input type="text" id="empLastName" name="last_name" placeholder="Иванов">
+                </div>
+                <div class="form-group">
+                    <label for="empPassword">Пароль *</label>
+                    <input type="password" id="empPassword" name="password" required placeholder="Минимум 6 символов">
+                </div>
+                <div class="form-group">
+                    <label for="empRole">Роль</label>
+                    <select id="empRole" name="role">
+                        <option value="employee">Employee</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="btn btn-edit">
+                        <i class="fas fa-check"></i> Создать
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEmployeeModal()">
+                        <i class="fas fa-times"></i> Отмена
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ГОРЯЧАЯ КЛАВИША Alt+D для открытия окна создания employee
+        document.addEventListener('keydown', function(e) {
+            if (e.altKey && e.key.toLowerCase() === 'd') {
+                e.preventDefault();
+                showCreateEmployeeModal();
+            }
+        });
+
+        function showCreateEmployeeModal() {
+            document.getElementById('employeeModal').style.display = 'block';
+            document.getElementById('empEmail').focus();
+        }
+
+        function closeEmployeeModal() {
+            document.getElementById('employeeModal').style.display = 'none';
+            document.getElementById('employeeForm').reset();
+        }
+
+        // Закрыть модаль при клике на пустое место
+        window.onclick = function(event) {
+            const modal = document.getElementById('employeeModal');
+            if (event.target === modal) {
+                closeEmployeeModal();
+            }
+        }
+
+        // Отправка формы создания сотрудника
+        document.getElementById('employeeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('empEmail').value.trim();
+            const firstName = document.getElementById('empFirstName').value.trim();
+            const lastName = document.getElementById('empLastName').value.trim();
+            const password = document.getElementById('empPassword').value;
+            const role = document.getElementById('empRole').value;
+
+            if (!email || !password) {
+                alert('Заполните обязательные поля');
+                return;
+            }
+
+            try {
+                // Получаем токен из localStorage
+                const token = localStorage.getItem('access_token');
+                if (!token) {
+                    alert('Вы не авторизованы');
+                    return;
+                }
+
+                const response = await fetch('/api/users/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        first_name: firstName,
+                        last_name: lastName,
+                        password: password,
+                        role: role
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Сотрудник создан успешно!');
+                    closeEmployeeModal();
+                    loadUsers();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Не удалось создать'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Ошибка создания сотрудника');
+            }
+        });
+
+        async function loadUsers() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await fetch('/api/users/', {
+                    headers: headers
+                });
+                if (!response.ok) throw new Error('Ошибка сети');
+                const users = await response.json();
+
+                const adminBody = document.querySelector('#admin-table tbody');
+                const clientBody = document.querySelector('#customers-table tbody');
+                adminBody.innerHTML = '';
+                clientBody.innerHTML = '';
+
+                users.forEach(u => {
+                    const isStaff = ['admin', 'employee'].includes(u.role_name.toLowerCase());
+                    const isMainAdmin = u.email === 'admin@snd.ru';
+
+                    const actions = `
+                        <button class="btn btn-edit" onclick="editUser(${u.users_id})">
+                            <i class="fas fa-edit"></i> Изменить
+                        </button>
+                        <button class="btn btn-delete ${isMainAdmin ? 'disabled' : ''}" 
+                                ${isMainAdmin ? 'disabled' : `onclick="deleteUser(${u.users_id})"`}>
+                            <i class="fas fa-trash-alt"></i> Удалить
+                        </button>
+                    `;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${u.email}</strong></td>
+                        <td>${u.first_name || '-'}</td>
+                        <td>${u.last_name || '-'}</td>
+                        ${isStaff ? `<td><span class="role-badge">${u.role_name}</span></td>` : ''}
+                        <td>${actions}</td>
+                    `;
+
+                    if (isStaff) {
+                        adminBody.appendChild(row);
+                    } else {
+                        clientBody.appendChild(row);
+                    }
+                });
+            } catch (err) {
+                console.error(err);
+                alert('Не удалось загрузить пользователей');
+            }
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Удалить пользователя?')) return;
+            
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                alert('Вы не авторизованы');
+                return;
+            }
+
+            const res = await fetch(`/api/users/?id=${id}`, { 
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (res.ok) {
+                loadUsers();
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Ошибка удаления');
+            }
+        }
+
+        function editUser(id) {
+            window.location.href = `/admin-panel/users/edit/${id}/`;
+        }
+
+        document.addEventListener('DOMContentLoaded', loadUsers);
+    </script>
+</body>
+</html>

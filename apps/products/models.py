@@ -56,8 +56,7 @@ class Products(models.Model):
     specifications = models.JSONField(blank=True, null=True)
     row_version = models.BigIntegerField(blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True)
-    updated_at = models.DateTimeField(blank=True, null=True)
-    image_url = models.CharField(max_length=255, blank=True, null=True)  # одна главная картинка
+    updated_at = models.DateTimeField(blank=True, null=True) 
     images = models.JSONField(blank=True, null=True)  # массив картинок JSONB
     
     

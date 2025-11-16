@@ -5,21 +5,42 @@ from django.shortcuts import render
 # apps/catalog/api/views.py
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny, BasePermission
 from apps.products.models import Brands, Categories, Products
 from .serializers import BrandSerializer, CategorySerializer, ProductSerializer
 from apps.users.models import Users
 import os
 from django.conf import settings
 
-class IsAdminUser(IsAuthenticated):
+class IsAdminUser(BasePermission):
+    """
+    Allows access only to admin users for write operations.
+    Read operations are allowed for everyone.
+    """
+    
     def has_permission(self, request, view):
+        # Allow read operations for everyone
+        if request.method in ['GET', 'HEAD', 'OPTIONS']:
+            return True
+            
+        # For write operations, check if user is admin
         try:
+            # Получаем customer_id из объекта customer (если есть)
+            customer_id = None
+            if hasattr(request.user, 'customer') and request.user.customer:
+                customer_id = request.user.customer.customer_id
+            elif hasattr(request.user, 'customer_id'):
+                customer_id = request.user.customer_id
+            
+            if not customer_id:
+                return False
+            
             return Users.objects.filter(
-                customer_id=request.user.customer_id,
+                customer_id=customer_id,
                 role__role_name='admin'
             ).exists()
-        except:
+        except Exception as e:
+            print(f"IsAdminUser error: {e}")
             return False
 
 # === БРЕНДЫ ===
@@ -52,53 +73,35 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAdminUser]
     
-    
-    
-
-
-
-from django.core.files.storage import default_storage
+# === ПРОДУКТЫ ===
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Products.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [AllowAny]  # Разрешаем всем доступ к продуктам
+
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]  # Только админы могут создавать/редактировать/удалять
+        else:
+            permission_classes = [AllowAny]  # Все могут просматривать
+        return [permission() for permission in permission_classes]
 
     def create(self, request, *args, **kwargs):
-        data = request.data.copy()
-        files = request.FILES.getlist('images')
-
-        if not 3 <= len(files) <= 5:
-            return Response({"error": "Нужно от 3 до 5 изображений"}, status=status.HTTP_400_BAD_REQUEST)
-
-        image_urls = []
-        for file in files:
-            path = default_storage.save(f'products/{file.name}', file)
-            image_urls.append(default_storage.url(path))
-
-        data.setlist('images', image_urls)
-
-        serializer = self.get_serializer(data=data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=201)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        data = request.data.copy()
-        files = request.FILES.getlist('images')
-
-        if files:
-            if not 3 <= len(files) <= 5:
-                return Response({"error": "Нужно от 3 до 5 изображений"}, status=status.HTTP_400_BAD_REQUEST)
-
-            image_urls = []
-            for file in files:
-                path = default_storage.save(f'products/{file.name}', file)
-                image_urls.append(default_storage.url(path))
-
-            data.setlist('images', image_urls)
-
-        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        serializer.save()

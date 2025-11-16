@@ -1,19 +1,41 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Категории — Админ</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
   <style>
+    :root {
+        --primary: #d97706;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f9f9f9;
+        --card-bg: #f9f9f9;
+        --text: #333;
+        --text-secondary: #666;
+        --border: #eeeeee;
+    }
+    [data-theme="dark"] {
+        --primary: #d97706;
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #2d2d2d;
+        --card-bg: #2d2d2d;
+        --text: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --border: #404040;
+    }
+    body { background: var(--bg-secondary); color: var(--text); transition: background 0.3s ease, color 0.3s ease; }
     .admin-container { max-width: 1000px; margin: 0 auto; padding: 20px; }
     .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .btn { padding: 10px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .admin-header h1 { color: var(--text); margin: 0; }
+    .btn { padding: 10px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; margin-right: 5px; }
     .btn-secondary { background: #6c757d; }
-    .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    .table th, .table td { padding: 12px; border: 1px solid var(--border); text-align: left; }
+    .table { width: 100%; border-collapse: collapse; margin-top: 20px; background: var(--bg-primary); }
+    .table th, .table td { padding: 12px; border: 1px solid var(--border); text-align: left; color: var(--text); }
     .table th { background: var(--card-bg); }
+    #theme-toggle { background: var(--primary); color: white; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 16px; }
   </style>
 </head>
 <body>
@@ -21,6 +43,7 @@
     <div class="admin-header">
       <h1>Категории</h1>
       <div>
+        <button id="theme-toggle"><i class="fas fa-moon"></i></button>
         <a href="{% url 'category_add' %}" class="btn">Добавить категорию</a>
         <a href="/admin-panel/" class="btn btn-secondary">Назад</a>
       </div>

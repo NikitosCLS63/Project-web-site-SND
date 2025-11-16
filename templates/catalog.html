@@ -1,0 +1,1036 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+    <link rel="stylesheet" href="{% static 'css/catalog.css' %}">
+    
+
+    <div class="catalog-header">
+        <h1>📦 Каталог товаров</h1>
+    </div>
+
+    <div class="catalog-layout">
+        <!-- Боковая панель фильтров -->
+        <aside class="sidebar-filters">
+            <div class="filter-title">
+                <span>Фильтры</span>
+                <button class="filter-reset" onclick="resetAllFilters()">Сбросить</button>
+            </div>
+
+            <!-- Цена -->
+            <div class="filter-group">
+                <div class="filter-header" onclick="toggleFilterGroup(this)">
+                    <span>Цена</span>
+                    <div class="arrow"></div>
+                </div>
+                <div class="filter-options">
+                    <div class="price-range">
+                        <input type="number" id="price-min" placeholder="От" min="0">
+                        <input type="number" id="price-max" placeholder="До" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Наличие -->
+            <div class="filter-group">
+                <div class="filter-header" onclick="toggleFilterGroup(this)">
+                    <span>Наличие</span>
+                    <div class="arrow"></div>
+                </div>
+                <div class="filter-options">
+                    <label><input type="checkbox" value="in-stock" class="filter-checkbox"> В наличии <span class="filter-count">(0)</span></label>
+                    <label><input type="checkbox" value="out-of-stock" class="filter-checkbox"> Нет в наличии <span class="filter-count">(0)</span></label>
+                </div>
+            </div>
+
+            <!-- Динамические фильтры из specifications -->
+            <div id="dynamic-filters"></div>
+
+            <button class="apply-filters-btn" onclick="applyFilters()">Применить фильтры</button>
+        </aside>
+
+        <!-- Основной контент каталога -->
+        <div class="catalog-content">
+            <div class="top-bar">
+                <div class="category-selector" id="category-selector">
+                    <!-- Categories will be injected here -->
+                </div>
+                <input type="text" id="search" placeholder="Поиск по названию..." class="search-input">
+            </div>
+
+            <div id="products-container" class="products-grid">
+                <div class="empty-message">Загрузка товаров...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal для характеристик -->
+    <div id="specs-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <style>
+                /* Modal custom styles */
+                #specs-modal .modal-content{max-width:980px;padding:1.25rem;border-radius:12px}
+                .modal-header-info{display:flex;align-items:center;gap:1rem;margin-bottom:0.75rem}
+                .modal-brand-logo{width:56px;height:56px;object-fit:contain;border-radius:8px;background:#fff;padding:6px;border:1px solid rgba(0,0,0,0.06)}
+                .modal-brand-name{font-size:1rem;color:var(--text-secondary);font-weight:600}
+                .modal-rating{font-size:0.95rem;color:#666;margin-top:2px}
+                .modal-actions{display:flex;gap:0.5rem}
+                .modal-action-btn{background:#fff;color:#222;border:1px solid rgba(0,0,0,0.08);padding:0.45rem 0.7rem;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem}
+                .modal-action-btn.primary{background:#ff8c42;color:#fff;border-color:transparent}
+                .modal-action-btn.ghost{background:transparent;border:1px solid rgba(0,0,0,0.06)}
+                .modal-action-btn .icon{font-size:1.05rem}
+                .price-stock-row{display:flex;gap:1rem;align-items:center;margin-bottom:1rem}
+                .price-block strong{color:var(--text-secondary)}
+                .price-value{font-size:1.3rem;color:#ff8c42;font-weight:700}
+            </style>
+
+            <div class="modal-header-info">
+                <img id="modal-brand-logo" class="modal-brand-logo" src="/static/images/no-image.png" alt="Бренд">
+                <div style="flex:1;min-width:0">
+                    <div id="modal-brand-name" class="modal-brand-name"></div>
+                    <div id="modal-rating" class="modal-rating"></div>
+                </div>
+            </div>
+
+            <div class="modal-gallery">
+                <div class="modal-main-image">
+                    <img id="modal-main-img" src="" alt="Товар">
+                </div>
+                <div class="modal-thumbnails" id="modal-thumbnails"></div>
+            </div>
+
+            <h2 id="modal-product-name" style="margin-bottom: 0.5rem;"></h2>
+            <div class="price-stock-row">
+                <div class="price-block">
+                    <strong style="color: var(--text-secondary);">Цена:</strong>
+                    <div id="modal-price" class="price-value"></div>
+                </div>
+                <div class="stock-block">
+                    <strong style="color: var(--text-secondary);">В наличии:</strong>
+                    <div id="modal-stock" style="font-size: 1.1rem;"></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:1rem;">
+                    <div id="modal-rating-stars" style="font-size:1.2rem;color:#ffa500;">★★★★★ (5/5)</div>
+                </div>
+                <div style="margin-left:auto;display:flex;gap:0.5rem;align-items:center;">
+                    <button id="modal-fav-btn" class="modal-action-btn ghost" data-product-id="" onclick="toggleFavorite(event, '')"><span class="icon">🤍</span></button>
+                    <button id="modal-cart-btn" class="modal-action-btn primary" data-product-id="" onclick="addToCart(event, '')"><span class="icon">🛒</span></button>
+                    <button id="modal-compare-btn" class="modal-action-btn" data-product-id="" onclick="toggleCompare(event)"><span class="icon">⚖️</span></button>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 1rem; margin-top: 1.5rem;">Характеристики:</h3>
+            <div id="specs-container" class="specs-grid"></div>
+
+            <div style="margin-top:2rem;display:flex;gap:1rem;">
+                <button id="modal-reviews-btn" class="modal-action-btn" onclick="openReviewsModal()" style="background:#1976d2;color:#fff;border:0;padding:0.5rem 1rem;">Просмотреть отзывы</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reviews Modal -->
+    <div id="reviews-modal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width:600px;">
+            <button class="modal-close" onclick="closeReviewsModal()">&times;</button>
+            <h2>Отзывы о товаре</h2>
+            <div id="reviews-list" style="max-height:400px;overflow-y:auto;margin-top:1rem;"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/theme-toggle.js"></script>
+    <script>
+        let allProducts = [];
+        let currentProduct = null;
+
+        // Templates auto-loading
+        const templateFiles = ['keyboard.json','laptop.json','monitor.json','mouse.json'];
+        const templatesMap = {}; // type -> set(keys)
+        const keyLabels = {
+            // default human-friendly labels (Russian)
+            'brand': 'Бренд', 'model': 'Модель', 'cpu': 'Процессор', 'gpu': 'Видеокарта', 'ram': 'ОЗУ', 'storage': 'Хранилище', 'display': 'Экран',
+            'ports': 'Порты', 'battery': 'Батарея', 'layout': 'Расположение клавиш', 'backlight': 'Подсветка', 'mechanical': 'Механическая',
+            'connection': 'Подключение', 'dpi': 'DPI', 'buttons': 'Кнопки',
+            'resolution': 'Разрешение', 'refresh_rate': 'Частота обновления', 'panel_type': 'Тип панели', 'size': 'Размер',
+            'type': 'Тип', 'category': 'Категория', 'category_name': 'Категория', 'template': 'Тип товара',
+            'price': 'Цена', 'stock_quantity': 'Количество в наличии', 'status': 'Статус'
+        };
+
+        let serverPaged = false;
+        let serverPageCount = 1;
+
+        async function fetchTemplates() {
+            try {
+                for (const fname of templateFiles) {
+                    try {
+                        const res = await fetch(`/static/json_templates/${fname}`);
+                        if (!res.ok) continue;
+                        const json = await res.json();
+                        const ttype = (json.type || '').toString().toLowerCase();
+                        const keys = Object.keys(json.specs || {});
+                        templatesMap[ttype] = new Set(keys);
+                        // merge labels
+                        keys.forEach(k => {
+                            if (!keyLabels[k]) {
+                                // humanize fallback
+                                keyLabels[k] = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                            }
+                        });
+                    } catch (e) {
+                        console.warn('Failed to load template', fname, e);
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading templates', e);
+            }
+        }
+
+        function getLabelForKey(k) { return keyLabels[k] || k; }
+
+        // Try to detect server-side pagination support
+        async function detectServerPagination() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                const r = await fetch('/api/products/?page=1', { headers });
+                if (!r.ok) return false;
+                const data = await r.json();
+                if (data && typeof data === 'object' && Array.isArray(data.results)) {
+                    serverPaged = true;
+                    serverPageCount = Math.max(1, Math.ceil((data.count || data.results.length) / pageSize));
+                    allProducts = data.results;
+                    renderProducts(allProducts);
+                    generateCategorySelector();
+                    generateDynamicFilters();
+                    updateFilterCounts();
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function fetchServerPage(page=1) {
+            const token = localStorage.getItem('access_token');
+            const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+            const resp = await fetch(`/api/products/?page=${page}`, { headers });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            if (Array.isArray(data.results)) {
+                allProducts = data.results;
+                serverPageCount = Math.max(1, Math.ceil((data.count || data.results.length) / pageSize));
+                return allProducts;
+            }
+            throw new Error('Unexpected paged response');
+        }
+
+        async function loadProducts() {
+            try {
+                await fetchTemplates();
+
+                // first check if server supports pagination
+                const supported = await detectServerPagination();
+                if (supported) return; // detectServerPagination already rendered first page
+
+                // Fallback: fetch full list
+                const token = localStorage.getItem('access_token');
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                const response = await fetch('/api/products/', { headers });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const products = await response.json();
+                if (!Array.isArray(products)) throw new Error('Invalid response format');
+                allProducts = products;
+
+                renderProducts(allProducts);
+                generateCategorySelector();
+                generateDynamicFilters();
+                updateFilterCounts();
+            } catch (error) {
+                console.error('Ошибка загрузки товаров:', error);
+                document.getElementById('products-container').innerHTML = '<div class="empty-message">❌ Ошибка при загрузке товаров. Проверьте консоль.</div>';
+            }
+        }
+
+        function renderProducts(products) {
+            const container = document.getElementById('products-container');
+            
+            if (products.length === 0) {
+                    container.innerHTML = '<div class="empty-message">Товары не найдены</div>';
+                    return;
+                }
+
+                // Pagination: calculate slice for current page
+                const startIndex = (currentPage - 1) * pageSize;
+                const endIndex = startIndex + pageSize;
+                const pageProducts = products.slice(startIndex, endIndex);
+
+                container.innerHTML = pageProducts.map(product => {
+                const images = getValidImages(product.images);
+                const isLiked = JSON.parse(localStorage.getItem('favorites') || '[]').includes(product.product_id);
+                const inCart = isInCart(product.product_id);
+                
+                return `
+                    <div class="product-card" onclick="openModal('${product.product_id}')">
+                        <div class="product-image-container">
+                            <img src="${images[0] || '/static/images/no-image.png'}" alt="${product.product_name}" class="product-image">
+                            ${images.length > 1 ? `
+                                <div class="image-nav">
+                                    <button onclick="event.stopPropagation(); changeImage(event, -1, '${product.product_id}')">❮</button>
+                                    <button onclick="event.stopPropagation(); changeImage(event, 1, '${product.product_id}')">❯</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="product-info">
+                            <h3 class="product-name" title="${product.product_name}">${product.product_name}</h3>
+                            <div class="product-stock ${product.stock_quantity < 5 ? 'low' : ''}">
+                                ${product.stock_quantity > 0 ? `${product.stock_quantity} в наличии` : 'Нет в наличии'}
+                            </div>
+                            
+                            <div class="product-footer">
+                                <div class="product-price">${formatPrice(product.price)} ₽</div>
+                                <button class="favorite-btn ${isLiked ? 'liked' : ''}" data-product-id="${product.product_id}" onclick="toggleFavorite(event, '${product.product_id}')">
+                                    ${isLiked ? '❤️' : '🤍'}
+                                </button>
+                                <button class="add-to-cart-btn ${inCart ? 'in-cart' : ''}" data-product-id="${product.product_id}" onclick="addToCart(event, '${product.product_id}')">
+                                    ${inCart ? '✓' : '🛒'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Update all cart buttons after rendering
+            updateAllCartButtons();
+
+            renderPagination(products.length);
+        }
+
+        // Pagination helpers
+        let currentPage = 1;
+        const pageSize = 9; // 3x3 grid
+
+        function renderPagination(totalItems) {
+            const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+            const existing = document.getElementById('pagination');
+            if (existing) existing.remove();
+
+            const pagination = document.createElement('div');
+            pagination.id = 'pagination';
+            pagination.className = 'pagination';
+
+            const prev = document.createElement('button');
+            prev.textContent = '‹';
+            prev.disabled = currentPage === 1;
+            prev.onclick = () => { if (currentPage > 1) { currentPage--; applyFilters(); } };
+            pagination.appendChild(prev);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.className = (i === currentPage) ? 'active' : '';
+                btn.onclick = (() => { const page = i; return () => { currentPage = page; applyFilters(); }; })();
+                pagination.appendChild(btn);
+            }
+
+            const next = document.createElement('button');
+            next.textContent = '›';
+            next.disabled = currentPage === totalPages;
+            next.onclick = () => { if (currentPage < totalPages) { currentPage++; applyFilters(); } };
+            pagination.appendChild(next);
+
+            document.querySelector('.catalog-content').appendChild(pagination);
+        }
+
+        function getValidImages(images) {
+            if (!images) return [];
+
+            const result = [];
+            const seen = new Set();
+
+            const addImage = (img) => {
+                if (typeof img === 'string' && !img.startsWith('blob:') && img.trim() && !seen.has(img.trim())) {
+                    if (img.trim().startsWith('[')) {
+                        try {
+                            const parsed = JSON.parse(img.trim());
+                            if (Array.isArray(parsed)) {
+                                parsed.forEach(p => {
+                                    if (p && typeof p === 'string' && !p.startsWith('blob:') && !seen.has(p.trim())) {
+                                        seen.add(p.trim());
+                                        result.push(p.trim());
+                                    }
+                                });
+                            }
+                        } catch (e) {
+                            seen.add(img.trim());
+                            result.push(img.trim());
+                        }
+                    } else {
+                        seen.add(img.trim());
+                        result.push(img.trim());
+                    }
+                }
+            };
+
+            if (Array.isArray(images)) {
+                images.forEach(addImage);
+            } else if (typeof images === 'string') {
+                addImage(images);
+            }
+
+            return result.slice(0, 5);
+        }
+
+        let imageIndices = {};
+
+        function changeImage(event, direction, productId) {
+            event.stopPropagation();
+            const card = event.target.closest('.product-card');
+            const images = getValidImages(getProductById(productId).images);
+            
+            if (images.length === 0) return;
+            
+            if (!imageIndices[productId]) imageIndices[productId] = 0;
+            imageIndices[productId] = (imageIndices[productId] + direction + images.length) % images.length;
+            
+            const img = card.querySelector('.product-image');
+            img.src = images[imageIndices[productId]];
+        }
+
+        function formatPrice(price) {
+            return new Intl.NumberFormat('ru-RU').format(Math.round(price));
+        }
+
+        function addToCart(event, productId) {
+            event.stopPropagation();
+            
+            // Ensure productId is an integer
+            const id = parseInt(productId);
+            const product = getProductById(id);
+            
+            if (!product) {
+                console.error('Product not found:', id);
+                return;
+            }
+            
+            const qty = 1;
+            
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const existing = cart.find(item => item.product_id === id);
+            
+            if (existing) {
+                existing.quantity = Math.min(existing.quantity + qty, product.stock_quantity);
+            } else {
+                cart.push({ product_id: id, quantity: qty });
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            
+            const btn = event.target;
+            // Immediately update button state
+            btn.classList.add('in-cart');
+            btn.textContent = '✓';
+            
+            // Also update all other buttons for this product immediately
+            updateCartButtonsImmediate(id);
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                btn.classList.remove('in-cart');
+                btn.textContent = '🛒';
+                // Update all buttons to show they're in cart
+                updateAllCartButtons();
+            }, 2000);
+            
+            // Update cart counter in header
+            updateCartCounter();
+        }
+        
+        function updateCartButtonsImmediate(productId) {
+            // Ensure productId is an integer for consistency
+            const id = parseInt(productId);
+            
+            // Update all buttons in product grid for this product
+            document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+                if (parseInt(btn.dataset.productId) === id) {
+                    btn.classList.add('in-cart');
+                    btn.textContent = '✓';
+                }
+            });
+            
+            // Update button in modal if it's open and showing this product
+            const modalBtn = document.getElementById('modal-cart-btn');
+            if (modalBtn && parseInt(modalBtn.dataset.productId) === id) {
+                modalBtn.classList.add('in-cart');
+                modalBtn.innerHTML = '<span class="icon">✓</span>';
+            }
+        }
+        
+        function isInCart(productId) {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const id = parseInt(productId);
+            return cart.some(item => item.product_id === id);
+        }
+        
+        function updateAllCartButtons() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            const productIdsInCart = cart.map(item => item.product_id);
+            
+            // Update all add-to-cart buttons
+            document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+                const productId = parseInt(btn.dataset.productId);
+                if (productIdsInCart.includes(productId)) {
+                    btn.classList.add('in-cart');
+                    btn.textContent = '✓';
+                } else {
+                    btn.classList.remove('in-cart');
+                    btn.textContent = '🛒';
+                }
+            });
+        }
+
+        function toggleFavorite(event, productId) {
+            event.stopPropagation();
+            // Determine button element (target may be inner span)
+            let btn = event.currentTarget || event.target;
+            if (btn && btn.tagName !== 'BUTTON') {
+                btn = btn.closest('button');
+            }
+
+            // Determine product id: prefer explicit arg, then data attribute on button
+            let id = productId || (btn && (btn.dataset.productId || btn.getAttribute('data-product-id')));
+            if (!id) return;
+            id = parseInt(id);
+
+            let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+
+            const already = favorites.includes(id);
+            if (already) {
+                favorites = favorites.filter(x => x !== id);
+            } else {
+                favorites.push(id);
+            }
+
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+
+            // Update button UI: prefer .icon child if present
+            if (btn) {
+                const icon = btn.querySelector('.icon');
+                if (icon) {
+                    icon.textContent = already ? '🤍' : '❤️';
+                } else {
+                    btn.textContent = already ? '🤍' : '❤️';
+                }
+                btn.classList.toggle('liked', !already);
+            }
+        }
+
+        function getProductById(productId) {
+            return allProducts.find(p => p.product_id === parseInt(productId));
+        }
+
+        function openModal(productId) {
+            currentProduct = getProductById(productId);
+            
+            const validImages = getValidImages(currentProduct.images);
+            document.getElementById('modal-main-img').src = validImages[0] || '/static/images/no-image.png';
+            
+            document.getElementById('modal-product-name').textContent = currentProduct.product_name;
+            document.getElementById('modal-price').textContent = formatPrice(currentProduct.price) + ' ₽';
+            document.getElementById('modal-stock').textContent = `${currentProduct.stock_quantity} шт.`;
+            
+            // Brand and rating
+            document.getElementById('modal-brand-logo').src = currentProduct.brand_logo_url || '/static/images/no-image.png';
+            document.getElementById('modal-brand-name').textContent = currentProduct.brand_name || '';
+            document.getElementById('modal-rating').textContent = currentProduct.rating ? `Рейтинг: ${currentProduct.rating} / 5` : '';
+            
+            // Modal action buttons setup (set product id and handlers)
+            const compareBtn = document.getElementById('modal-compare-btn');
+            const favBtn = document.getElementById('modal-fav-btn');
+            const cartBtn = document.getElementById('modal-cart-btn');
+            
+            compareBtn.dataset.productId = currentProduct.product_id;
+            favBtn.dataset.productId = currentProduct.product_id;
+            cartBtn.dataset.productId = currentProduct.product_id;
+            
+            updateCompareButton(compareBtn, currentProduct.product_id);
+            
+            // favorite button state
+            const isLiked = JSON.parse(localStorage.getItem('favorites') || '[]').includes(currentProduct.product_id);
+            const favIcon = favBtn.querySelector('.icon');
+            if (favIcon) favIcon.textContent = isLiked ? '❤️' : '🤍';
+            favBtn.onclick = (e) => toggleFavorite(e, currentProduct.product_id);
+            
+            // cart button handler and state
+            const inCart = isInCart(currentProduct.product_id);
+            cartBtn.classList.toggle('in-cart', inCart);
+            cartBtn.innerHTML = inCart ? '<span class="icon">✓</span>' : '<span class="icon">🛒</span>';
+            cartBtn.onclick = (e) => addToCart(e, currentProduct.product_id);
+            
+            // Update rating stars display
+            const ratingStarsEl = document.getElementById('modal-rating-stars');
+            if (ratingStarsEl && currentProduct.rating) {
+                const stars = Math.round(currentProduct.rating);
+                const starStr = '★'.repeat(Math.min(stars, 5)) + '☆'.repeat(Math.max(0, 5 - stars));
+                ratingStarsEl.textContent = `${starStr} (${currentProduct.rating}/5)`;
+            } else if (ratingStarsEl) {
+                ratingStarsEl.textContent = 'Нет оценок';
+            }
+
+            const thumbnails = document.getElementById('modal-thumbnails');
+            thumbnails.innerHTML = validImages.map((img, idx) => `
+                <div class="modal-thumbnail ${idx === 0 ? 'active' : ''}" onclick="switchImage(${idx}, '${img.replace(/'/g, "\\'")}')">
+                    <img src="${img}" alt="Изображение ${idx + 1}">
+                </div>
+            `).join('');
+
+            const specsContainer = document.getElementById('specs-container');
+            const specs = currentProduct.specifications || {};
+            
+            specsContainer.innerHTML = Object.entries(specs).map(([key, value]) => {
+                let displayValue = value;
+                if (Array.isArray(value)) {
+                    displayValue = value.join('\n\n');
+                }
+                
+                const label = getLabelForKey(key);
+                return `
+                    <div class="spec-item">
+                        <div class="spec-label">${label}</div>
+                        <div class="spec-value">${displayValue}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('specs-modal').classList.add('active');
+        }
+
+        function getCompareList() {
+            return JSON.parse(localStorage.getItem('compare') || '[]');
+        }
+
+        function isCompared(productId) {
+            const list = getCompareList();
+            return list.includes(parseInt(productId));
+        }
+
+        function updateCompareButton(btn, productId) {
+            if (!btn) return;
+            if (isCompared(productId)) {
+                btn.textContent = 'В сравнении';
+                btn.classList.add('in-compare');
+            } else {
+                btn.textContent = 'Сравнить';
+                btn.classList.remove('in-compare');
+            }
+        }
+
+        function toggleCompare(event) {
+            event.stopPropagation();
+            const btn = event.currentTarget || event.target;
+            const productId = btn.dataset.productId || (currentProduct && currentProduct.product_id);
+            if (!productId) return;
+
+            let list = getCompareList();
+            const id = parseInt(productId);
+            const product = getProductById(id);
+            
+            // Check if adding this product would mix categories
+            if (!list.includes(id) && list.length > 0 && product) {
+                // Get first product in compare list
+                const firstCompareId = list[0];
+                const firstProduct = getProductById(firstCompareId);
+                const currentTemplate = getProductCategory(product);
+                const firstTemplate = firstProduct ? getProductCategory(firstProduct) : null;
+                
+                if (currentTemplate !== firstTemplate) {
+                    alert('❌ Нельзя сравнивать товары разных категорий!\nВыберите товары одной категории.');
+                    return;
+                }
+            }
+            
+            if (list.includes(id)) {
+                list = list.filter(x => x !== id);
+            } else {
+                list.push(id);
+            }
+            localStorage.setItem('compare', JSON.stringify(list));
+            updateCompareButton(btn, id);
+
+            // Navigate to comparison page when user adds (optional)
+            if (list.includes(id)) {
+                window.location.href = '/comparison/';
+            }
+        }
+
+        function switchImage(index, imageSrc) {
+            document.getElementById('modal-main-img').src = imageSrc;
+            document.querySelectorAll('.modal-thumbnail').forEach((thumb, i) => {
+                thumb.classList.toggle('active', i === index);
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('specs-modal').classList.remove('active');
+        }
+
+        function openReviewsModal() {
+            if (!currentProduct) return;
+            const reviewsModal = document.getElementById('reviews-modal');
+            const reviewsList = document.getElementById('reviews-list');
+            reviewsList.innerHTML = '<div>Загрузка отзывов...</div>';
+            reviewsModal.style.display = 'flex';
+
+            fetch(`/api/reviews/?product=${currentProduct.product_id}`)
+                .then(res => res.ok ? res.json() : Promise.reject('API error'))
+                .then(data => {
+                    const reviews = Array.isArray(data) ? data : (data.results || []);
+                    if (!reviews.length) {
+                        reviewsList.innerHTML = '<div>Нет отзывов</div>';
+                        return;
+                    }
+                    reviewsList.innerHTML = reviews.map(r => `
+                        <div style="border:1px solid #ddd;padding:0.75rem;margin-bottom:0.5rem;border-radius:6px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                                <strong>${r.customer?.email || 'Аноним'}</strong>
+                                <span style="color:#ffa500;font-size:1.1rem;">★ ${r.rating}/5</span>
+                            </div>
+                            <div>${r.reviews_comment || 'Без комментария'}</div>
+                            <div style="font-size:0.85rem;color:#999;margin-top:0.5rem;">${new Date(r.publication_date).toLocaleDateString('ru-RU')}</div>
+                        </div>
+                    `).join('');
+                })
+                .catch(e => {
+                    console.error(e);
+                    reviewsList.innerHTML = '<div>Ошибка загрузки отзывов</div>';
+                });
+        }
+        
+        function removeFromCart(productId) {
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            cart = cart.filter(item => item.product_id !== productId);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            loadCartItems();
+            updateCartCounter();
+        }
+
+        function closeReviewsModal() {
+            document.getElementById('reviews-modal').style.display = 'none';
+        }
+
+        // Закрытие модального окна при клике вне
+        document.getElementById('specs-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'specs-modal') closeModal();
+        });
+
+        // Фильтрация и сортировка
+        document.getElementById('search').addEventListener('input', (e) => {
+            applyFilters();
+        });
+
+        function applySort(products) {
+            const sortValue = document.getElementById('sort')?.value || '';
+            let sorted = [...products];
+
+            switch(sortValue) {
+                case 'price-asc':
+                    sorted.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+                    break;
+                case 'price-desc':
+                    sorted.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+                    break;
+                case 'name':
+                    sorted.sort((a, b) => a.product_name.localeCompare(b.product_name));
+                    break;
+            }
+
+            renderProducts(sorted);
+        }
+
+        // Функции для фильтров
+        function toggleFilterGroup(header) {
+            header.classList.toggle('open');
+            const options = header.nextElementSibling;
+            if (options) {
+                options.style.display = options.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        async function applyFilters() {
+            let filtered = [];
+            if (serverPaged) {
+                try {
+                    const pageProducts = await fetchServerPage(currentPage);
+                    filtered = pageProducts.slice();
+                } catch (e) {
+                    console.error('Server page fetch failed', e);
+                    filtered = getFilteredProductsByCategory();
+                }
+            } else {
+                filtered = getFilteredProductsByCategory();
+            }
+
+            // Фильтр по цене
+            const minPrice = parseFloat(document.getElementById('price-min').value) || 0;
+            const maxPrice = parseFloat(document.getElementById('price-max').value) || Infinity;
+            
+            filtered = filtered.filter(p => {
+                const price = parseFloat(p.price);
+                return price >= minPrice && price <= maxPrice;
+            });
+
+            // Фильтр по наличию
+            const stockFilters = Array.from(document.querySelectorAll('.filter-checkbox:not([data-spec-key])')).filter(cb => {
+                const parent = cb.closest('.filter-group');
+                return parent && parent.querySelector('.filter-header').textContent.includes('Наличие') && cb.checked;
+            });
+
+            if (stockFilters.length > 0) {
+                const hasInStock = stockFilters.some(cb => cb.value === 'in-stock');
+                const hasOutOfStock = stockFilters.some(cb => cb.value === 'out-of-stock');
+                
+                if (hasInStock && !hasOutOfStock) {
+                    filtered = filtered.filter(p => p.stock_quantity > 0);
+                } else if (hasOutOfStock && !hasInStock) {
+                    filtered = filtered.filter(p => p.stock_quantity === 0);
+                }
+            }
+
+            // Фильтр по спецификациям
+            const specFilters = {};
+            document.querySelectorAll('.filter-checkbox[data-spec-key]:checked').forEach(cb => {
+                const key = cb.dataset.specKey;
+                const value = cb.value;
+                if (!specFilters[key]) specFilters[key] = [];
+                specFilters[key].push(value);
+            });
+
+            // Применяем фильтры спецификаций
+            Object.entries(specFilters).forEach(([key, values]) => {
+                filtered = filtered.filter(p => {
+                    const specs = p.specifications || {};
+                    const specValue = specs[key];
+                    
+                    // Проверяем, есть ли совпадение
+                    if (Array.isArray(specValue)) {
+                        return values.some(v => specValue.some(sv => sv && sv.trim() === v));
+                    } else if (specValue) {
+                        return values.some(v => specValue.toString().trim() === v);
+                    }
+                    return false;
+                });
+            });
+
+            // Применяем поиск и сортировку
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            filtered = filtered.filter(p => p.product_name.toLowerCase().includes(searchTerm));
+
+            applySort(filtered);
+            updateFilterCounts();
+        }
+
+        function resetAllFilters() {
+            document.getElementById('price-min').value = '';
+            document.getElementById('price-max').value = '';
+            document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('search').value = '';
+            currentPage = 1;
+            renderProducts(getFilteredProductsByCategory());
+            updateFilterCounts();
+        }
+
+        function generateDynamicFilters() {
+            const container = document.getElementById('dynamic-filters');
+            container.innerHTML = '';
+
+            // Build specs from products of the currently selected category only
+            const specsByKey = {};
+            const filteredByCategory = getFilteredProductsByCategory();
+
+            filteredByCategory.forEach(product => {
+                const specs = product.specifications || {};
+                Object.entries(specs).forEach(([key, value]) => {
+                    if (!specsByKey[key]) specsByKey[key] = new Set();
+
+                    if (Array.isArray(value)) {
+                        value.forEach(v => { if (v && typeof v === 'string') specsByKey[key].add(v.trim()); });
+                    } else if (value !== null && value !== undefined) {
+                        specsByKey[key].add(String(value).trim());
+                    }
+                });
+            });
+
+            // Названия фильтров
+            const labels = {
+                'cpu': 'Процессор',
+                'gpu': 'Видеокарта',
+                'ram': 'Оперативная память (ГБ)',
+                'brand': 'Бренд',
+                'model': 'Модель',
+                'layout': 'Расположение клавиш',
+                'backlight': 'Подсветка',
+                'mechanical': 'Механическая',
+                'connection': 'Тип подключения',
+                'dpi': 'DPI',
+                'buttons': 'Кнопки',
+                'ports': 'Порты и разъемы',
+                'battery': 'Батарея',
+                'display': 'Тип экрана',
+                'storage': 'Хранилище (ГБ)',
+                '1q': 'Диагональ экрана (дюйм)',
+                '44': 'Объем оперативной памяти (ГБ)',
+                '4op': 'Игровой ноутбук',
+                '1go': 'Модель дискретной видеокарты',
+                '1gf': 'Линейка процессора',
+                '1gt': 'Объем SSD (ГБ)',
+                'al': 'Операционная система',
+                '32s': 'Линейка',
+                '2d': 'Разрешение экрана',
+                '1gg': 'Производитель процессора',
+                '1gd': 'Тип экрана'
+            };
+
+            // Сортируем ключи для порядка отображения
+            const priority = ['brand', 'cpu', 'gpu', 'ram', 'storage', 'display', 'model', 'ports', 'battery'];
+            const sortedKeys = [
+                ...priority.filter(k => specsByKey[k]),
+                ...Object.keys(specsByKey).filter(k => !priority.includes(k)).sort()
+            ];
+
+            // If a specific category is selected, limit keys to those defined in templates for that category
+            let allowedKeysSet = null;
+            if (currentCategory && currentCategory !== 'all') {
+                allowedKeysSet = new Set();
+                const types = categoriesMap[currentCategory] || [];
+                types.forEach(t => {
+                    const s = templatesMap[t];
+                    if (s) {
+                        s.forEach(k => allowedKeysSet.add(k));
+                    }
+                });
+            }
+
+            // Создаём фильтры для каждого ключа
+            sortedKeys.forEach(key => {
+                if (allowedKeysSet && !allowedKeysSet.has(key)) return; // skip keys not relevant to category
+                const values = Array.from(specsByKey[key]).sort();
+                
+                // Пропускаем, если слишком много значений или пусто
+                if (values.length === 0 || values.length > 50) return;
+
+                const filterHTML = `
+                    <div class="filter-group">
+                        <div class="filter-header" onclick="toggleFilterGroup(this)">
+                            <span>${getLabelForKey(key)}</span>
+                            <div class="arrow"></div>
+                        </div>
+                        <div class="filter-options" style="display: none;">
+                            ${values.map(value => `
+                                <label>
+                                    <input type="checkbox" value="${value}" class="filter-checkbox" data-spec-key="${key}">
+                                    ${value} <span class="filter-count">(0)</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML += filterHTML;
+            });
+        }
+
+        function updateFilterCounts() {
+            // Обновляем счётчики в фильтрах
+            const inStockCount = allProducts.filter(p => p.stock_quantity > 0).length;
+            const outOfStockCount = allProducts.filter(p => p.stock_quantity === 0).length;
+
+            // Обновляем span'ы с числами для базовых фильтров
+            const counts = {
+                'in-stock': inStockCount,
+                'out-of-stock': outOfStockCount
+            };
+
+            document.querySelectorAll('.filter-checkbox:not([data-spec-key])').forEach(cb => {
+                const countSpan = cb.closest('label').querySelector('.filter-count');
+                if (countSpan && counts[cb.value] !== undefined) {
+                    countSpan.textContent = `(${counts[cb.value]})`;
+                }
+            });
+
+            // Обновляем счётчики для динамических фильтров
+            document.querySelectorAll('.filter-checkbox[data-spec-key]').forEach(cb => {
+                const key = cb.dataset.specKey;
+                const value = cb.value;
+                const countSpan = cb.closest('label').querySelector('.filter-count');
+                
+                if (countSpan) {
+                    const count = getFilteredProductsByCategory().filter(p => {
+                        const specs = p.specifications || {};
+                        const specValue = specs[key];
+                        if (Array.isArray(specValue)) return specValue.some(v => v && v.trim() === value);
+                        else if (specValue) return specValue.toString().trim() === value;
+                        return false;
+                    }).length;
+                    
+                    countSpan.textContent = `(${count})`;
+                }
+            });
+        }
+
+        // ----------------------
+        // Category handling
+        // ----------------------
+        const categoriesMap = {
+            'all': [],
+            'notebooks': ['laptop'],
+            'monitors': ['monitor'],
+            'peripherals': ['keyboard','mouse'],
+            'keyboards': ['keyboard'],
+            'mice': ['mouse']
+        };
+
+        let currentCategory = 'all';
+
+        function getProductCategory(prod) {
+            // Prioritize template field (from DB category), fall back to type/category fields
+            const template = (prod.template || '').toString().toLowerCase();
+            if (template) return template;
+            return (prod.type || prod.product_type || prod.category || prod.category_name || '').toString().toLowerCase();
+        }
+
+        function getFilteredProductsByCategory() {
+            if (currentCategory === 'all') return allProducts.slice();
+            const allowed = categoriesMap[currentCategory] || [];
+            return allProducts.filter(p => allowed.includes(getProductCategory(p)));
+        }
+
+        function generateCategorySelector() {
+            const sel = document.getElementById('category-selector');
+            const cats = [
+                {id:'all', label:'Все'},
+                {id:'notebooks', label:'Ноутбуки'},
+                {id:'monitors', label:'Мониторы'},
+                {id:'peripherals', label:'Периферия'},
+                {id:'keyboards', label:'Клавиатуры'},
+                {id:'mice', label:'Мыши'}
+            ];
+            sel.innerHTML = cats.map(c => `<button class="cat-btn" data-cat="${c.id}">${c.label}</button>`).join(' ');
+            sel.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.onclick = () => { currentCategory = btn.dataset.cat; currentPage = 1; applyFilters(); generateDynamicFilters(); updateFilterCounts(); updateActiveCategory(); };
+            });
+            updateActiveCategory();
+        }
+
+        function updateActiveCategory() {
+            document.querySelectorAll('#category-selector .cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === currentCategory));
+        }
+
+        // Initialize category selector after products load
+
+        // Загрузка товаров при загрузке страницы
+        loadProducts();
+
+    </script>
+{% endblock %}

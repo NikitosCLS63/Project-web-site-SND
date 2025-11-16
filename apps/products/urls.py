@@ -25,13 +25,13 @@ urlpatterns = [
     path('admin-panel/category/edit/<int:pk>/', lambda r, pk: render(r, 'admin/category_form.html', {'category_id': pk}), name='category_edit'),
     
     #продукты 
-      # ✅ СПИСОК ТОВАРОВ
+      #СПИСОК ТОВАРОВ
     path('admin-panel/products/', lambda r: render(r, 'admin/product_list.html'), name='product_list'),
 
-    # ✅ ДОБАВЛЕНИЕ ТОВАРА
+    # ДОБАВЛЕНИЕ ТОВАРА
     path('admin-panel/product/add/', lambda r: render(r, 'admin/product_form.html'), name='product_add'),
 
-    # ✅ РЕДАКТИРОВАНИЕ ТОВАРА
+    #РЕДАКТИРОВАНИЕ ТОВАРА
     path('admin-panel/product/edit/<int:pk>/',
          lambda r, pk: render(r, 'admin/product_form.html', {'product_id': pk}),
          name='product_edit'),

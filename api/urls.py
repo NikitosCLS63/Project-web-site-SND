@@ -4,6 +4,8 @@ from rest_framework import routers
 from .views import *
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
 router = routers.DefaultRouter()
 
@@ -13,11 +15,10 @@ router.register(r'brands', BrandViewSet)
 router.register(r'suppliers', SupplierViewSet)
 router.register(r'products', ProductViewSet)
 
-
-# Users
+# Users - убираем UserViewSet из router
+# Используем только custom users_api view
 router.register(r'customers', CustomerViewSet)
 router.register(r'roles', RoleViewSet)
-router.register(r'users', UserViewSet)
 router.register(r'addresses', AddressViewSet)
 
 # Cart
@@ -46,6 +47,8 @@ router.register(r'analytics-snapshots', AnalyticsSnapshotViewSet)
 router.register(r'analytics-metrics', AnalyticsMetricViewSet)
 router.register(r'backup-logs', BackupLogViewSet)
 
+from apps.users.views import users_api
+
 urlpatterns = [
     path('', include(router.urls)),
     
@@ -55,4 +58,16 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('password_reset/', views.PasswordResetView.as_view()),
     path('password_reset_confirm/', views.PasswordResetConfirmView.as_view()),
+    
+    # JWT токены
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    
+    # === PAYMENT PROCESSING ===
+    path('payment/create/', views.create_payment, name='create_payment'),
+    path('payment/status/', views.check_payment_status, name='check_payment_status'),
+    path('orders/create/', views.create_order, name='create_order'),
+    
+    # Custom users API (с авторизацией через JWT)
+    path('users/', users_api, name='users_api'),
 ]

@@ -1,208 +1,441 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
   <meta charset="UTF-8" />
   <title>{% if product_id %}Редактировать{% else %}Добавить{% endif %} товар</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
+  <style>
+    :root {
+        --primary: #d97706;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f9f9f9;
+        --text: #333;
+        --text-secondary: #666;
+        --border: #eeeeee;
+        --input-bg: #ffffff;
+    }
+    [data-theme="dark"] {
+        --primary: #d97706;
+        --bg-primary: #1a1a1a;
+        --bg-secondary: #2d2d2d;
+        --text: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --border: #404040;
+        --input-bg: #2d2d2d;
+    }
+    body { background: var(--bg-secondary); color: var(--text); transition: background 0.3s ease, color 0.3s ease; margin: 0; font-family: Arial, sans-serif; }
+    .admin-container { max-width: 900px; margin: 0 auto; padding: 20px; }
+    h1 { color: var(--text); }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text); }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 2px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text); transition: border-color 0.2s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
+    .btn { padding: 10px 16px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; margin-right: 8px; margin-top: 5px; transition: all 0.2s; }
+    .btn:hover { opacity: 0.9; transform: translateY(-2px); }
+    .btn-secondary { background: #6c757d; }
+    .img-box { display: inline-block; position: relative; margin: 5px; }
+    .preview-image { width: 100px; height: 100px; object-fit: cover; border-radius: 4px; }
+    .remove-btn, .main-btn { position: absolute; top: 0; right: 0; margin: 2px; padding: 4px 8px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; }
+    .remove-btn:hover, .main-btn:hover { background: rgba(0,0,0,0.9); }
+    #specs-form label { display: block; margin-top: 5px; font-weight: bold; color: var(--text); }
+    #specs-form input, #specs-form textarea { width: 100%; margin-bottom: 5px; padding: 8px; border: 2px solid var(--border); border-radius: 4px; background: var(--input-bg); color: var(--text); }
+    #specs-form input:focus, #specs-form textarea:focus { outline: none; border-color: var(--primary); }
+    #json-preview { display:none; }
+    .preview { margin-top: 20px; }
+    .error { color: #dc3545; margin-top: 10px; }
+    #theme-toggle { background: var(--primary); color: white; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 16px; margin-right: 10px; }
+    #theme-toggle:hover { opacity: 0.9; transform: scale(1.05); }
+  </style>
 </head>
-
 <body>
-  <div class="admin-container">
+<div class="admin-container">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <h1>{% if product_id %}Редактировать{% else %}Добавить{% endif %} товар</h1>
-
-    <form id="product-form" enctype="multipart/form-data" data-product-id="{{ product_id|default:'' }}">
-      <div class="form-group">
-        <label>SKU *</label>
-        <input type="text" id="sku" required />
-      </div>
-
-      <div class="form-group">
-        <label>Название *</label>
-        <input type="text" id="name" required />
-      </div>
-
-      <div class="form-group">
-        <label>Цена *</label>
-        <input type="number" step="0.01" id="price" required />
-      </div>
-
-      <div class="form-group">
-        <label>Количество</label>
-        <input type="number" id="stock" />
-      </div>
-
-      <div class="form-group">
-        <label>Бренд</label>
-        <select id="brand"></select>
-      </div>
-
-      <div class="form-group">
-        <label>Категория</label>
-        <select id="category"></select>
-      </div>
-
-      <div class="form-group">
-        <label>Поставщик</label>
-        <select id="supplier"></select>
-      </div>
-
-      <div class="form-group">
-        <label>Характеристики (JSONB)</label>
-        <textarea id="specifications" placeholder='{"color": "Red", "memory": "16GB"}'></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Фото (3-5 изображений)</label>
-        <input type="file" id="images" accept="image/*" multiple>
-        <div class="preview" id="preview"></div>
-        <div class="error" id="image-error"></div>
-      </div>
-
-      <button type="submit" class="btn">Сохранить</button>
-      <a href="/admin-panel/products/" class="btn btn-secondary">Отмена</a>
-    </form>
-
-    <div id="message"></div>
+    <button id="theme-toggle"><i class="fas fa-moon"></i></button>
   </div>
 
-  <script>
-    const form = document.getElementById('product-form');
-    const productId = form.dataset.productId ? parseInt(form.dataset.productId) : null;
-    const isEdit = productId !== null;
+  <form id="product-form" enctype="multipart/form-data" data-product-id="{{ product_id|default:'' }}">
+    <div class="form-group">
+      <label>SKU *</label>
+      <input type="text" id="sku" required />
+    </div>
 
-    const imageInput = document.getElementById('images');
-    const preview = document.getElementById('preview');
-    const imageError = document.getElementById('image-error');
+    <div class="form-group">
+      <label>Название *</label>
+      <input type="text" id="name" required />
+    </div>
 
-    // Массив для хранения выбранных файлов
-    let selectedFiles = [];
+    <div class="form-group">
+      <label>Цена *</label>
+      <input type="number" step="0.01" id="price" required />
+    </div>
 
-    // Функция отображения всех изображений (File объекты или URL)
-    function showImages() {
-      preview.innerHTML = ''; // Очистка превью
-      selectedFiles.forEach(fileOrUrl => {
-        const img = document.createElement('img');
-        img.style.maxWidth = '100px';
-        img.style.margin = '5px';
-        if (typeof fileOrUrl === 'string') {
-          img.src = fileOrUrl; // URL из сервера
-        } else {
-          const reader = new FileReader();
-          reader.onload = e => img.src = e.target.result;
-          reader.readAsDataURL(fileOrUrl);
-        }
-        preview.appendChild(img);
-      });
+    <div class="form-group">
+      <label>Количество</label>
+      <input type="number" id="stock" />
+    </div>
+
+    <div class="form-group">
+      <label>Бренд</label>
+      <select id="brand"></select>
+    </div>
+
+    <div class="form-group">
+      <label>Категория</label>
+      <select id="category">
+        <option value="">Выберите категорию</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Поставщик</label>
+      <select id="supplier"></select>
+    </div>
+
+    <!-- Выбор шаблона -->
+    <div class="form-group">
+      <label>Шаблон характеристик</label>
+      <select id="templateSelect">
+        <option value="">Выберите шаблон</option>
+        <option value="laptop">Ноутбук</option>
+        <option value="mouse">Мышь</option>
+        <option value="keyboard">Клавиатура</option>
+        <option value="monitor">Монитор</option>
+      </select>
+      <button type="button" id="loadTemplateBtn">Загрузить шаблон</button>
+    </div>
+
+    <!-- Визуальная форма характеристик -->
+    <div class="form-group">
+      <div id="specs-form"></div>
+      <div id="json-preview"></div>
+    </div>
+
+    <div class="form-group">
+      <label>Главное изображение *</label>
+      <input type="file" id="mainImageInput" accept="image/*">
+
+      <label>Дополнительные изображения (до 4 шт)</label>
+      <input type="file" id="extraImagesInput" accept="image/*">
+
+      <button type="button" id="addExtraBtn" class="btn btn-secondary">Добавить дополнительное фото</button>
+
+      <div id="preview" class="preview"></div>
+      <div class="error" id="image-error"></div>
+    </div>
+
+    <button type="submit" class="btn">Сохранить</button>
+    <a href="/admin-panel/products/" class="btn btn-secondary">Отмена</a>
+  </form>
+</div>
+
+<script>
+const form = document.getElementById('product-form');
+const productId = form.dataset.productId ? parseInt(form.dataset.productId) : null;
+const isEdit = productId !== null;
+
+const mainImageInput = document.getElementById('mainImageInput');
+const extraImagesInput = document.getElementById('extraImagesInput');
+const addExtraBtn = document.getElementById('addExtraBtn');
+
+const brand = document.getElementById("brand");
+const category = document.getElementById("category");
+const supplier = document.getElementById("supplier");
+
+const preview = document.getElementById('preview');
+const imageError = document.getElementById('image-error');
+const specsFormContainer = document.getElementById("specs-form");
+const templateSelect = document.getElementById("templateSelect");
+const loadTemplateBtn = document.getElementById("loadTemplateBtn");
+
+let selectedFiles = [];
+let existingImages = [];
+let specsData = {}; // объект с характеристиками
+let isSpecsModified = false;
+
+// --- Маппинг английских ключей в русские подписи
+const fieldLabels = {
+  brand: "Бренд",
+  model: "Модель",
+  cpu: "Процессор",
+  ram: "Оперативная память",
+  storage: "Накопитель",
+  display: "Дисплей",
+  gpu: "Видеокарта",
+  ports: "Порты (через запятую)",
+  battery: "Батарея",
+  dpi: "DPI",
+  buttons: "Кнопки (через запятую)",
+  connection: "Подключение",
+  layout: "Раскладка",
+  backlight: "Подсветка",
+  diagonal: "Диагональ",
+  resolution: "Разрешение",
+  matrix: "Матрица",
+  refresh_rate: "Частота обновления"
+};
+
+// --- SKU
+function generateSKU(){
+  const random = Math.random().toString(36).substring(2,6).toUpperCase();
+  const date = new Date().toISOString().slice(0,10).replace(/-/g,"");
+  return `SKU-${date}-${random}`;
+}
+const skuInput = document.getElementById("sku");
+if(!isEdit){
+  skuInput.value = generateSKU();
+  skuInput.disabled = true;
+}
+
+// --- отображение изображений
+function showImages(){
+  preview.innerHTML="";
+  selectedFiles.forEach((fileOrUrl,index)=>{
+    const container=document.createElement("div");
+    container.classList.add("img-box");
+
+    const img=document.createElement("img");
+    // Для превью: если это File объект, создаем blob только для отображения (не сохраняем)
+    // Если это URL из БД, используем его как есть
+    if(fileOrUrl instanceof File) {
+      const reader = new FileReader();
+      reader.onload = (e) => { img.src = e.target.result; };
+      reader.readAsDataURL(fileOrUrl);
+    } else if(typeof fileOrUrl === 'string' && !fileOrUrl.startsWith('blob:')) {
+      img.src = fileOrUrl;
+    } else {
+      // Skip blob URLs
+      return;
     }
+    img.classList.add("preview-image");
 
-    // Обработчик выбора файлов
-    imageInput.addEventListener('change', e => {
-      const files = Array.from(e.target.files);
+    const removeBtn=document.createElement("button");
+    removeBtn.innerHTML="✖";
+    removeBtn.classList.add("remove-btn");
+    removeBtn.onclick=()=>{ selectedFiles.splice(index,1); showImages(); };
 
-      // Перезаписываем массив выбранных файлов
-      selectedFiles = files;
-
-      // Проверка количества изображений
-      if (selectedFiles.length < 3 || selectedFiles.length > 5) {
-        imageError.textContent = 'Выберите от 3 до 5 изображений';
-      } else {
-        imageError.textContent = '';
-      }
-
+    const makeMainBtn=document.createElement("button");
+    makeMainBtn.innerHTML="Сделать главным";
+    makeMainBtn.classList.add("main-btn");
+    makeMainBtn.onclick=()=>{
+      const main=selectedFiles.splice(index,1)[0];
+      selectedFiles.unshift(main);
       showImages();
-    });
-
-    // Загрузка опций для select
-    async function loadOptions() {
-      const [brands, categories, suppliers] = await Promise.all([
-        fetch('/api/brands/').then(r => r.json()),
-        fetch('/api/categories/').then(r => r.json()),
-        fetch('/api/suppliers/').then(r => r.json())
-      ]);
-
-      const brandSelect = document.getElementById('brand');
-      brands.forEach(b => brandSelect.add(new Option(b.brand_name, b.brand_id)));
-
-      const catSelect = document.getElementById('category');
-      categories.forEach(c => catSelect.add(new Option(c.category_name, c.category_id)));
-
-      const supSelect = document.getElementById('supplier');
-      suppliers.forEach(s => supSelect.add(new Option(s.supplier_name, s.supplier_id)));
-    }
-
-    // Загрузка данных продукта при редактировании
-    async function loadProduct() {
-      if (!isEdit) return;
-      const res = await fetch(`/api/products/${productId}/`);
-      const data = await res.json();
-
-      document.getElementById('sku').value = data.sku;
-      document.getElementById('name').value = data.product_name;
-      document.getElementById('price').value = data.price;
-      document.getElementById('stock').value = data.stock_quantity || '';
-      document.getElementById('brand').value = data.brand?.brand_id || '';
-      document.getElementById('category').value = data.category?.category_id || '';
-      document.getElementById('supplier').value = data.supplier?.supplier_id || '';
-
-      if (data.specifications)
-        document.getElementById('specifications').value = JSON.stringify(data.specifications, null, 2);
-
-      if (data.images && data.images.length > 0) {
-        // Подгружаем изображения с сервера в массив selectedFiles как URL
-        selectedFiles = data.images;
-        showImages();
-      }
-    }
-
-    // Отправка формы
-    form.onsubmit = async e => {
-      e.preventDefault();
-
-      if (!isEdit && (selectedFiles.length < 3 || selectedFiles.length > 5)) {
-        imageError.textContent = 'Нужно выбрать от 3 до 5 изображений';
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append('sku', document.getElementById('sku').value);
-      formData.append('product_name', document.getElementById('name').value);
-      formData.append('price', document.getElementById('price').value);
-      const stock = document.getElementById('stock').value;
-      if (stock) formData.append('stock_quantity', stock);
-      const brand = document.getElementById('brand').value;
-      if (brand) formData.append('brand_id', brand);
-      const cat = document.getElementById('category').value;
-      if (cat) formData.append('category_id', cat);
-      const sup = document.getElementById('supplier').value;
-      if (sup) formData.append('supplier_id', sup);
-      const specs = document.getElementById('specifications').value;
-      if (specs) formData.append('specifications', specs);
-
-      // Добавляем файлы в FormData
-      selectedFiles.forEach(file => {
-        if (file instanceof File) formData.append('images', file);
-      });
-
-      const method = isEdit ? 'PUT' : 'POST';
-      const url = isEdit ? `/api/products/${productId}/` : '/api/products/';
-
-      const res = await fetch(url, { method, body: formData });
-
-      if (res.ok) {
-        alert('Успешно!');
-        location.href = '/admin-panel/products/';
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Ошибка');
-      }
     };
 
-    loadOptions();
-    loadProduct();
+    container.appendChild(img);
+    container.appendChild(removeBtn);
+    if(index!==0) container.appendChild(makeMainBtn);
+    preview.appendChild(container);
+  });
+}
 
-  </script>
+mainImageInput.addEventListener("change", e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+  selectedFiles.unshift(file);
+  showImages();
+});
+
+addExtraBtn.addEventListener("click", ()=>extraImagesInput.click());
+extraImagesInput.addEventListener("change", e=>{
+  const files = Array.from(e.target.files);
+  if(selectedFiles.length+files.length>5){
+    imageError.textContent="Максимум 5 изображений (1 главное + 4 доп.)";
+    return;
+  }
+  selectedFiles.push(...files);
+  showImages();
+});
+
+// --- загрузка опций
+async function loadOptions(){
+  const token = localStorage.getItem('access_token');
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+  
+  const [brands, categoriesList, suppliersList]=await Promise.all([
+    fetch('/api/brands/', { headers }).then(r=>r.json()),
+    fetch('/api/categories/', { headers }).then(r=>r.json()),
+    fetch('/api/suppliers/', { headers }).then(r=>r.json())
+  ]);
+
+  brands.forEach(b=>brand.add(new Option(b.brand_name,b.brand_id)));
+  categoriesList.forEach(c=>category.add(new Option(c.category_name,c.category_id)));
+  suppliersList.forEach(s=>supplier.add(new Option(s.supplier_name,s.supplier_id)));
+}
+
+// --- загрузка товара при редактировании
+async function loadProduct(){
+  if(!isEdit) return;
+  const token = localStorage.getItem('access_token');
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+  
+  const res=await fetch(`/api/products/${productId}/`, { headers });
+  const data=await res.json();
+
+  skuInput.value=data.sku;
+  document.getElementById('name').value=data.product_name;
+  document.getElementById('price').value=data.price;
+  document.getElementById('stock').value=data.stock_quantity||'';
+  brand.value=data.brand?.brand_id||'';
+  category.value=data.category?.category_id||'';
+  supplier.value=data.supplier?.supplier_id||'';
+
+  if(data.specifications){
+    specsData = data.specifications;
+    renderSpecsForm(specsData);
+  }
+
+  if(data.images && data.images.length>0){
+    // Очищаем images от blob URLs и вложенных JSON
+    const cleanImages = [];
+    for(let img of data.images){
+      if(typeof img === 'string' && !img.startsWith('blob:') && img.trim()){
+        cleanImages.push(img.trim());
+      }
+    }
+    existingImages = [...cleanImages];
+    selectedFiles = [...cleanImages];
+    showImages();
+  }
+}
+
+// --- шаблоны характеристик
+const templates={
+  laptop:{ specs:{brand:"",model:"",cpu:"",ram:"",storage:"",display:"",gpu:"",ports:[],battery:""}, categories:["Ноутбук","Ноутбуки"] },
+  mouse:{ specs:{brand:"",model:"",dpi:"",buttons:"",connection:""}, categories:["Мышь","Мыши"] },
+  keyboard:{ specs:{brand:"",model:"",layout:"",backlight:"",connection:""}, categories:["Клавиатура","Клавиатуры"] },
+  monitor:{ specs:{brand:"",model:"",diagonal:"",resolution:"",matrix:"",refresh_rate:"",ports:[]}, categories:["Монитор","Мониторы"] }
+};
+
+// --- рендер русской формы характеристик
+function renderSpecsForm(data){
+  specsFormContainer.innerHTML="";
+  for(const key in data){
+    const label=document.createElement("label");
+    label.textContent = fieldLabels[key] || key;
+
+    let input;
+    if(Array.isArray(data[key])){
+      input=document.createElement("textarea");
+      input.placeholder="Введите через запятую";
+      input.value=data[key].join(",");
+      input.addEventListener("input",()=>{ data[key]=input.value.split(","); isSpecsModified=true; });
+    } else {
+      input=document.createElement("input");
+      input.value=data[key];
+      input.addEventListener("input",()=>{ data[key]=input.value; isSpecsModified=true; });
+    }
+
+    specsFormContainer.appendChild(label);
+    specsFormContainer.appendChild(input);
+  }
+}
+
+// --- загрузка шаблона с проверкой изменений
+function loadTemplateWithCheck(templateName){
+  if(!templateName) return;
+
+  const selectedCategoryText = category.options[category.selectedIndex]?.text;
+  const expectedCategories = templates[templateName].categories;
+
+  if(selectedCategoryText && selectedCategoryText !== "Выберите категорию" && !expectedCategories.includes(selectedCategoryText)){
+    alert(`Шаблон "${templateName}" не соответствует выбранной категории "${selectedCategoryText}"`);
+    return;
+  }
+
+  if(isSpecsModified){
+    const confirmAction = confirm(
+      "Вы внесли изменения в характеристики. Загрузка нового шаблона удалит текущие данные.\n" +
+      "OK — загрузить новый шаблон.\nОтмена — продолжить редактирование."
+    );
+    if(!confirmAction) return;
+  }
+
+  specsData = JSON.parse(JSON.stringify(templates[templateName].specs));
+  renderSpecsForm(specsData);
+  templateSelect.value = templateName;
+  isSpecsModified = false;
+}
+
+loadTemplateBtn.addEventListener("click", ()=> loadTemplateWithCheck(templateSelect.value));
+
+// --- автоподбор шаблона при смене категории
+category.addEventListener("change", ()=>{
+  const selectedCategoryText = category.options[category.selectedIndex]?.text;
+  if(!selectedCategoryText || selectedCategoryText === "Выберите категорию") return;
+
+  const matchingTemplates = Object.entries(templates)
+    .filter(([key, tpl]) => tpl.categories.includes(selectedCategoryText))
+    .map(([key])=>key);
+
+  const currentTemplate = templateSelect.value;
+
+  if(matchingTemplates.length===0) return;
+
+  if(currentTemplate && !matchingTemplates.includes(currentTemplate)){
+    alert(`Выбранная категория "${selectedCategoryText}" не соответствует текущему шаблону "${currentTemplate}"`);
+  } else if(!currentTemplate && matchingTemplates.length===1){
+    loadTemplateWithCheck(matchingTemplates[0]);
+  }
+});
+
+// --- submit
+form.addEventListener("submit", async e=>{
+  e.preventDefault();
+  if(!/^[a-zA-Z0-9а-яА-ЯёЁ\s\-]+$/.test(document.getElementById("name").value)){
+    alert("Название содержит недопустимые символы");
+    return;
+  }
+  if(document.getElementById("price").value<0){ alert("Цена не может быть меньше 0!"); return; }
+
+  const formData=new FormData();
+  formData.append("sku",skuInput.value);
+  formData.append("product_name",document.getElementById("name").value);
+  formData.append("price",document.getElementById("price").value);
+  formData.append("stock_quantity",document.getElementById("stock").value);
+  formData.append("brand_id",brand.value);
+  formData.append("category_id",category.value);
+  formData.append("supplier_id",supplier.value);
+
+  // Collect all images: existing ones (URLs) + new files
+  const allImages = [];
+  
+  // Add existing image URLs from database (только реальные URL, не blob)
+  existingImages.forEach(url=>{ 
+    if(typeof url === 'string' && !url.startsWith('blob:')) {
+      allImages.push(url);
+    }
+  });
+  
+  // Add new uploaded files
+  selectedFiles.forEach(file=>{ 
+    if(file instanceof File) {
+      formData.append("image_files",file);
+    } else if(typeof file === 'string' && !file.startsWith('blob:')) {
+      // Add existing URLs that are still in selectedFiles
+      allImages.push(file);
+    }
+  });
+
+  formData.append("images",JSON.stringify(allImages));
+  formData.append("specifications",JSON.stringify(specsData));
+
+  const res=await fetch(isEdit?`/api/products/${productId}/`:"/api/products/",{ 
+    method:isEdit?"PUT":"POST", 
+    body:formData,
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+    }
+  });
+  if(res.ok){ alert("Успешно!"); location.href="/admin-panel/products/"; }
+  else{ const err=await res.json(); alert(err.error||"Ошибка"); }
+});
+
+loadOptions();
+loadProduct();
+</script>
 </body>
-
 </html>

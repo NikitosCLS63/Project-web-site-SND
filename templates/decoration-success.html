@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<style>
+    .success-container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 40px;
+        text-align: center;
+        background: var(--bg-primary);
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .success-icon {
+        font-size: 60px;
+        margin-bottom: 20px;
+        animation: bounce 0.6s ease-in-out;
+    }
+
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+    }
+
+    .success-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #28a745;
+        margin-bottom: 15px;
+    }
+
+    .success-message {
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+
+    .order-info {
+        background: var(--secondary);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        text-align: left;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .info-value {
+        font-weight: 600;
+        color: var(--text);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 12px 30px;
+        border: none;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background: #ff8c00;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #e07a30;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background: var(--secondary);
+        color: var(--text);
+        border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+        background: var(--border);
+    }
+
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #ff8c00;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<div class="success-container" id="success-content">
+    <div class="success-icon">✅</div>
+    <h1 class="success-title">Платеж успешен!</h1>
+    <p class="success-message">Спасибо за ваш заказ. Платёж был успешно обработан.</p>
+
+    <div class="order-info" id="order-info">
+        <div class="info-row">
+            <span class="info-label">Статус платежа:</span>
+            <span class="info-value">Успешно ✓</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">ID платежа:</span>
+            <span class="info-value" id="payment-id">Загружаем...</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Номер заказа:</span>
+            <span class="info-value" id="order-id">Создаём заказ...</span>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <a href="/catalog/" class="btn btn-primary">Вернуться в каталог</a>
+        <a href="/" class="btn btn-secondary">На главную</a>
+    </div>
+</div>
+
+<script src="{% static 'js/theme-toggle.js' %}"></script>
+<script>
+    // Get payment_id from URL query parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentId = urlParams.get('payment_id');
+
+    // Get order data from sessionStorage
+    const orderDataStr = sessionStorage.getItem('order_data');
+    
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            // Check payment status
+            if (paymentId) {
+                document.getElementById('payment-id').textContent = paymentId;
+                
+                const statusResponse = await fetch(`/api/payment/status/?payment_id=${paymentId}`);
+                const statusData = await statusResponse.json();
+                
+                if (statusData.success && statusData.paid) {
+                    // Payment confirmed, create order
+                    const orderData = orderDataStr ? JSON.parse(orderDataStr) : {};
+                    orderData.transaction_id = paymentId;
+                    
+                    const createOrderResponse = await fetch('/api/orders/create/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(orderData)
+                    });
+                    
+                    const orderResult = await createOrderResponse.json();
+                    
+                    if (orderResult.success) {
+                        document.getElementById('order-id').textContent = orderResult.order_id;
+                        
+                        // Clear cart and session data
+                        localStorage.removeItem('cart');
+                        sessionStorage.removeItem('order_data');
+                        sessionStorage.removeItem('payment_id');
+                        
+                        // Show success message
+                        console.log('✓ Заказ успешно создан:', orderResult.order_id);
+                    }
+                }
+            } else {
+                // No payment ID, but order data might exist in session
+                if (orderDataStr) {
+                    const orderData = JSON.parse(orderDataStr);
+                    
+                    // Create order anyway
+                    const createOrderResponse = await fetch('/api/orders/create/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(orderData)
+                    });
+                    
+                    const orderResult = await createOrderResponse.json();
+                    
+                    if (orderResult.success) {
+                        document.getElementById('order-id').textContent = orderResult.order_id;
+                        document.getElementById('payment-id').textContent = 'Обработан системой';
+                        
+                        // Clear cart and session data
+                        localStorage.removeItem('cart');
+                        sessionStorage.removeItem('order_data');
+                        sessionStorage.removeItem('payment_id');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error processing order:', error);
+            document.getElementById('order-id').textContent = 'Ошибка создания';
+        }
+    });
+</script>
+{% endblock %}

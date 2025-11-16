@@ -20,6 +20,8 @@ class Customers(models.Model):
     updated_at = models.DateTimeField(blank=True, null=True)
     password_reset_token = models.CharField(max_length=100, blank=True, null=True)
     password_reset_expires = models.DateTimeField(blank=True, null=True)
+    
+    
     class Meta:
         managed = False
         db_table = 'customers'

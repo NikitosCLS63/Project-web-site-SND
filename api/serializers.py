@@ -68,3 +68,30 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Categories
         fields = ['category_id', 'category_name', 'description', 'parent', 'parent_name']
+        
+        
+        
+# api/serializers.py  (или в apps/users/serializers.py)
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from apps.users.models import Customers
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # Добавляем роль
+        try:
+            user_obj = user.users_set.first()  # Users -> customer (обратная связь)
+            if user_obj and user_obj.role:
+                token['role'] = user_obj.role.role_name
+            else:
+                token['role'] = 'client'
+        except:
+            token['role'] = 'client'
+
+        token['email'] = user.email
+        token['first_name'] = user.first_name
+        token['last_name'] = user.last_name
+
+        return token

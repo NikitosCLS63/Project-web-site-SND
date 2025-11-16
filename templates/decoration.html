@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/decoration.css' %}">
+
+<div class="checkout-container">
+    <div class="checkout-header">
+        <div class="checkout-logo">SND</div>
+        <div class="checkout-steps">
+            <div class="step active" data-step="1">
+                <span class="step-number">1</span>
+                <span class="step-text">Данные покупателя</span>
+            </div>
+            <div class="step" data-step="2">
+                <span class="step-number">2</span>
+                <span class="step-text">Способ доставки</span>
+            </div>
+            <div class="step" data-step="3">
+                <span class="step-number">3</span>
+                <span class="step-text">Способ оплаты</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="checkout-content">
+        <div class="checkout-main">
+            <!-- STEP 1: CUSTOMER DATA -->
+            <div class="checkout-step active" id="step-1">
+                <h2>Данные покупателя</h2>
+                
+                <div class="login-section">
+                    <p>Уже покупали у нас?</p>
+                    <a href="#" class="login-link">Войти в аккаунт</a>
+                </div>
+
+                <div class="form-section">
+                    <h3>Ваши контактные данные</h3>
+                    
+                    <div class="form-group">
+                        <label for="phone">Телефон *</label>
+                        <input type="tel" id="phone" name="phone" placeholder="+7 (999) 123-45-67" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email (необязательно)</label>
+                        <input type="email" id="email" name="email" placeholder="your@email.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="first_name">Имя *</label>
+                        <input type="text" id="first_name" name="first_name" placeholder="Иван" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="last_name">Фамилия *</label>
+                        <input type="text" id="last_name" name="last_name" placeholder="Иванов" required>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="goToStep(2)">Далее →</button>
+                </div>
+            </div>
+
+            <!-- STEP 2: DELIVERY METHOD -->
+            <div class="checkout-step" id="step-2">
+                <h2>Способ получения</h2>
+
+                <div class="delivery-options">
+                    <div class="delivery-option">
+                        <input type="radio" id="delivery-courier" name="delivery_type" value="courier" checked>
+                        <label for="delivery-courier" class="delivery-label">
+                            <span class="delivery-title">🚚 Курьерская доставка</span>
+                            <span class="delivery-price">от 349 ₽</span>
+                        </label>
+                    </div>
+
+                    <div class="delivery-option">
+                        <input type="radio" id="delivery-pickup" name="delivery_type" value="pickup">
+                        <label for="delivery-pickup" class="delivery-label">
+                            <span class="delivery-title">📦 Самовывоз из пункта</span>
+                            <span class="delivery-price">Бесплатно</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- ADDRESS INPUT (for courier delivery) -->
+                <div id="address-section" style="display: block;">
+                    <h3>Адрес доставки</h3>
+                    
+                    <div class="form-group">
+                        <label for="country">Страна *</label>
+                        <input type="text" id="country" name="country" placeholder="Россия" value="Россия" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="region">Область/регион *</label>
+                            <input type="text" id="region" name="region" placeholder="Москва" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="city">Город *</label>
+                            <input type="text" id="city" name="city" placeholder="Москва" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-2">
+                            <label for="street">Улица *</label>
+                            <input type="text" id="street" name="street" placeholder="Ул. Пушкина" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="house">Дом *</label>
+                            <input type="text" id="house" name="house" placeholder="123" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="apartment">Квартира/офис</label>
+                            <input type="text" id="apartment" name="apartment" placeholder="45">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="goToStep(1)">← Назад</button>
+                    <button class="btn btn-primary" onclick="goToStep(3)">Далее →</button>
+                </div>
+            </div>
+
+            <!-- STEP 3: PAYMENT METHOD -->
+            <div class="checkout-step" id="step-3">
+                <h2>Способ оплаты</h2>
+
+                <div class="payment-section">
+                    <h3>💳 Безопасная оплата через Яндекс.Касса</h3>
+                    <p class="payment-description">Нажимая кнопку "Подтвердить заказ", вы будете перенаправлены на защищённую страницу платёжной системы Яндекс.Касса для ввода данных вашей карты.</p>
+
+                    <div class="security-info">
+                        <div class="security-item">
+                            <i>🔒</i>
+                            <span><strong>Зашифрованное соединение:</strong> Ваши данные защищены SSL</span>
+                        </div>
+                        <div class="security-item">
+                            <i>✓</i>
+                            <span><strong>Безопасные платежи:</strong> Интеграция с Яндекс.Касса</span>
+                        </div>
+                        <div class="security-item">
+                            <i>💳</i>
+                            <span><strong>Поддерживаемые карты:</strong> Visa, Mastercard, МИР</span>
+                        </div>
+                    </div>
+
+                    <div class="payment-note">
+                        ℹ️ После нажатия кнопки вы будете перенаправлены на защищённую страницу платёжной системы. Ваши данные карты вводятся непосредственно на сервере Яндекс.Кассы и не передаются на наш сервер.
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-secondary" onclick="goToStep(2)">← Назад</button>
+                    <button class="btn btn-primary" id="submit-order-btn" onclick="submitOrder()">Подтвердить заказ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ORDER SUMMARY (RIGHT SIDEBAR) -->
+        <div class="checkout-sidebar">
+            <div class="order-summary">
+                <h3>Ваш заказ</h3>
+
+                <div class="summary-items" id="summary-items">
+                    <!-- Items will be loaded here -->
+                </div>
+
+                <div class="summary-divider"></div>
+
+                <div class="summary-line">
+                    <span>Товары:</span>
+                    <span id="summary-subtotal">0 ₽</span>
+                </div>
+
+                <div class="summary-line">
+                    <span>Доставка:</span>
+                    <span id="summary-delivery">от 349 ₽</span>
+                </div>
+
+                <div class="summary-total">
+                    <span>Итого:</span>
+                    <span id="summary-total">0 ₽</span>
+                </div>
+
+                <button class="btn btn-outline" onclick="window.location.href='/cart/'">
+                    ← Изменить заказ
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/theme-toggle.js' %}"></script>
+<script src="{% static 'js/decoration.js' %}"></script>
+{% endblock %}
